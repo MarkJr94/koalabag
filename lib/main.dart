@@ -3,7 +3,7 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:koalabag/pages/articles.dart';
 import 'package:koalabag/pages/login.dart';
 import 'package:koalabag/pages/settings.dart';
-import 'package:koalabag/pages/splash.dart';
+import 'package:koalabag/pages/home.dart';
 import 'package:koalabag/redux/middlewares.dart' as mids;
 import 'package:koalabag/redux/reducers.dart';
 import 'package:koalabag/redux/state.dart';
