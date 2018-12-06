@@ -12,12 +12,12 @@ AppState appReducer(AppState state, action) {
 }
 
 AuthState _authStateReducer(AuthState authState, final action) {
-
   if (action is act.AuthReq) {
     return AuthState.fetching;
   } else if (action is act.AuthOk) {
     return AuthState.good;
   } else if (action is act.AuthFail) {
+    print("AuthFail: ${action.err}");
     return AuthState.bad;
   } else if (action is act.AuthLogoutOk) {
     return AuthState.bad;
@@ -26,9 +26,12 @@ AuthState _authStateReducer(AuthState authState, final action) {
   }
 }
 
-// TODO
-_entriesReducer(List<Entry> entries, action) {
-  return entries;
+List<Entry> _entriesReducer(List<Entry> entries, action) {
+  if (action is act.LoadEntriesOk) {
+    return action.entries;
+  } else {
+    return entries;
+  }
 }
 
 Auth _authReducer(Auth auth, action) {

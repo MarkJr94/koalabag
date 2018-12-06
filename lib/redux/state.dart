@@ -2,7 +2,6 @@ import 'package:koalabag/model/auth.dart';
 import 'package:koalabag/model/entry.dart';
 import 'package:meta/meta.dart';
 
-
 @immutable
 class AppState {
   final Auth auth;
@@ -21,7 +20,7 @@ class AppState {
 
   @override
   String toString() {
-    return 'AppState { auth: $auth, entries: $entries, authState: $authState }';
+    return 'AppState { auth: $auth, entries: <${entries.length} entries>, authState: $authState }';
   }
 }
 
@@ -30,5 +29,3 @@ enum AuthState {
   good,
   bad,
 }
-
-

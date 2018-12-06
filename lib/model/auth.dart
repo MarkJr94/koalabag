@@ -1,66 +1,29 @@
-class Auth {
-  final String accessToken;
-  final DateTime expiresAt;
-  final String scope;
-  final String tokenType;
-  final String refreshToken;
-  final String clientId;
-  final String clientSecret;
-  final String origin;
+import 'package:built_value/built_value.dart';
+import 'package:built_value/serializer.dart';
 
-  Auth(
-      {this.accessToken,
-        this.expiresAt,
-        this.scope,
-        this.tokenType,
-        this.refreshToken,
-        this.clientId,
-        this.clientSecret,
-        this.origin});
+part 'auth.g.dart';
 
-  factory Auth.fromNet(Map<String, dynamic> json,
-                       {String clientId, String clientSecret, String origin}) {
-    final expSpan = Duration(seconds: json["expires_in"]);
+abstract class Auth implements Built<Auth, AuthBuilder> {
+  static Serializer<Auth> get serializer => _$authSerializer;
 
-    return Auth(
-        accessToken: json['access_token'],
-        expiresAt: DateTime.now().add(expSpan),
-        scope: null,
-        tokenType: json['token_type'],
-        refreshToken: json['refresh_token'],
-        clientId: clientId,
-        clientSecret: clientSecret,
-        origin: origin);
-  }
+  String get access_token;
 
-  factory Auth.fromJson(Map<String, dynamic> json) {
-    return Auth(
-        accessToken: json['accessToken'],
-        expiresAt: DateTime.fromMillisecondsSinceEpoch(json['expiresAt']),
-        scope: null,
-        tokenType: json['tokenType'],
-        refreshToken: json['refreshToken'],
-        clientId: json['clientId'],
-        clientSecret: json['clientSecret'],
-        origin: json['origin']);
-  }
+  int get expires_in;
 
-  Map<String, dynamic> toJson() {
-    return {
-      'accessToken': accessToken,
-      'expiresAt': expiresAt.millisecondsSinceEpoch,
-      'scope': scope,
-      'tokenType': tokenType,
-      'refreshToken': refreshToken,
-      'clientId': clientId,
-      'clientSecret': clientSecret,
-      'origin': origin
-    };
-  }
+  @nullable
+  String get scope;
 
-  bool isExpired() {
-    final now = DateTime.now();
+  String get token_type;
 
-    return (expiresAt.compareTo(now) <= 0);
-  }
+  String get refresh_token;
+
+  String get client_id;
+
+  String get client_secret;
+
+  String get origin;
+
+  Auth._();
+
+  factory Auth([updates(AuthBuilder b)]) = _$Auth;
 }
