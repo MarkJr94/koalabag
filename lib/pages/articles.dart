@@ -1,7 +1,9 @@
+import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/ui.dart';
 import 'package:koalabag/model.dart';
 import 'package:redux/redux.dart';
 
@@ -16,16 +18,20 @@ class Articles extends StatelessWidget {
     return DefaultTabController(
         length: 3,
         child: StoreConnector<AppState, _ViewModel>(
+          distinct: true,
           converter: _ViewModel.fromStore,
           builder: (context, vm) {
             return Scaffold(
-              appBar: _appBar(),
+              appBar: _appBar(
+                  onRefresh: () => vm.refresh(), onSync: () => vm.fetch()),
               drawer: _drawer(textTheme, context),
-              body: TabBarView(children: [
-                _body("Favorites", vm),
-                _body("Unread", vm),
-                _body("Archived", vm),
-              ]),
+              body: Builder(builder: (context) {
+                return TabBarView(children: [
+                  _list("Favorites", vm, context, (e) => e.isStarred()),
+                  _list("Unread", vm, context, (e) => !e.isArchived()),
+                  _list("Archived", vm, context, (e) => e.isArchived()),
+                ]);
+              }),
               floatingActionButton: Builder(builder: (context) {
                 return FloatingActionButton(
                     child: Icon(Icons.add),
@@ -33,6 +39,7 @@ class Articles extends StatelessWidget {
                       Scaffold.of(context).showSnackBar(SnackBar(
                         content: Text("Unimplemented!"),
                         backgroundColor: Colors.deepPurple,
+                        duration: Duration(milliseconds: 500),
                       ));
 //                    vm.fetch();
 //                      vm.store.
@@ -40,39 +47,31 @@ class Articles extends StatelessWidget {
               }),
             );
           },
-          ignoreChange: (_) => false,
+          onWillChange: (vm) {
+            print('Articles onWillChange');
+          },
         ));
   }
 
-  Widget _body(final String title, final _ViewModel vm) {
-    return ListView.builder(
-        itemCount: (vm.entries?.length ?? 1) + 1,
-        itemBuilder: (context, idx) {
-          if (idx == 0) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                RaisedButton(
-                  onPressed: () => vm.refresh(),
-                  child: Text("Refresh Auth"),
-                ),
-                Text(title),
-                RaisedButton(
-                  onPressed: () => vm.fetch(),
-                  child: Text("Fetch Articles"),
-                )
-              ],
-            );
-          } else {
-            if (vm.entries != null) {
-              final entry = vm.entries[idx - 1];
-              return EntryTile(
-                entry: entry,
-                key: ValueKey(entry.id),
-              );
-            }
-          }
-        });
+  EntryList _list(final String title, final _ViewModel vm, BuildContext context,
+      bool Function(Entry) filter) {
+    final noOp = (idx, entry) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text("Unimplemented!"),
+        backgroundColor: Colors.deepPurple,
+        duration: Duration(milliseconds: 500),
+      ));
+    };
+
+    // TODO
+    final EntryListHolder eh = EntryListHolder(
+        onStar: noOp,
+        onCheck: noOp,
+        onDelete: noOp,
+        onRefresh: () => Future.sync(() => vm.fetch()));
+    return EntryList(
+        entries: BuiltList.of(vm.store.state.entries.where(filter)),
+        listener: eh);
   }
 
   Drawer _drawer(TextTheme theme, BuildContext context) {
@@ -120,7 +119,8 @@ class Articles extends StatelessWidget {
     );
   }
 
-  Widget _appBar() {
+  Widget _appBar(
+      {@required VoidCallback onRefresh, @required VoidCallback onSync}) {
     final mkTab = ({String text, IconData icon}) {
       return Tab(
         text: text,
@@ -130,6 +130,10 @@ class Articles extends StatelessWidget {
 
     return AppBar(
       title: Text("Articles"),
+      actions: <Widget>[
+        IconButton(icon: Icon(Icons.refresh), onPressed: onRefresh),
+        IconButton(icon: Icon(Icons.sync), onPressed: onSync),
+      ],
       bottom: TabBar(
         tabs: <Widget>[
           mkTab(text: "Favorites", icon: Icons.star),
@@ -147,12 +151,13 @@ class Articles extends StatelessWidget {
 
 class _ViewModel {
   final Store<AppState> store;
-  final List<Entry> entries;
+  final BuiltList<int> entryIds;
 
-  _ViewModel({@required this.store, @required this.entries});
+  _ViewModel({@required this.store, @required this.entryIds});
 
   static _ViewModel fromStore(Store<AppState> store) {
-    return _ViewModel(store: store, entries: store.state.entries);
+    final list = BuiltList.of(store.state.entries.map((e) => e.id));
+    return _ViewModel(store: store, entryIds: list);
   }
 
   void fetch() {
@@ -162,29 +167,18 @@ class _ViewModel {
   void refresh() {
     store.dispatch(act.AuthRefresh());
   }
-}
 
-class EntryTile extends StatelessWidget {
-  final Entry entry;
-
-  const EntryTile({Key key, @required this.entry}) : super(key: key);
+  Entry hydrate(final int id) {
+    return store.state?.entries?.firstWhere((e) => e.id == id);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    // TODO: implement build
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Text(
-          entry.title,
-          style: tt.body1,
-        ),
-        Text(
-          "${entry.reading_time} min",
-          style: tt.caption,
-        )
-      ],
-    );
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _ViewModel &&
+          runtimeType == other.runtimeType &&
+          entryIds == other.entryIds;
+
+  @override
+  int get hashCode => entryIds.hashCode;
 }

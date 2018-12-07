@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:http/http.dart' as http;
-import 'package:koalabag/data/repository.dart';
-import 'package:koalabag/pages/articles.dart';
-import 'package:koalabag/pages/login.dart';
-import 'package:koalabag/pages/settings.dart';
-import 'package:koalabag/pages/home.dart';
+import 'package:koalabag/data.dart';
+import 'package:koalabag/pages.dart';
 import 'package:koalabag/redux/middlewares.dart' as mids;
 import 'package:koalabag/redux/reducers.dart';
 import 'package:koalabag/redux/state.dart';
-import 'package:koalabag/model/entry.dart';
 import 'package:koalabag/consts.dart';
 import 'package:redux/redux.dart';
 import 'package:redux_logging/redux_logging.dart';

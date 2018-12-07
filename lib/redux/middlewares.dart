@@ -1,5 +1,5 @@
 import 'package:koalabag/data/repository.dart';
-import 'package:koalabag/model/auth.dart';
+import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/state.dart';
 import 'package:redux/redux.dart';
@@ -48,17 +48,22 @@ class EntryMiddleware extends MiddlewareClass<AppState> {
 
   @override
   void call(Store<AppState> store, action, NextDispatcher next) {
-    // TODO
     if (action is act.LoadEntries) {
       _dao
           .loadEntries()
           .then((entries) => store.dispatch(act.LoadEntriesOk(entries)))
           .catchError((err) => store.dispatch(act.EntriesFail(err)));
     } else if (action is act.FetchEntries) {
-      _dao.fetchEntries(store.state.auth).forEach((entries) {
-        print("Got ${entries.length} entries");
-        store.dispatch(act.FetchEntriesOk(entries));
-      }).catchError((err) => store.dispatch(act.EntriesFail(err)));
+      _dao
+          .fetchEntries(store.state.auth)
+          .fold(List<Entry>(), (List<Entry> acc, List<Entry> batch) {
+            print("Got a batch of ${batch.length} entries");
+            acc.addAll(batch);
+
+            return acc;
+          })
+          .then((entries) => store.dispatch(act.FetchEntriesOk(entries)))
+          .catchError((err) => store.dispatch(act.EntriesFail(err)));
     } else if (action is act.EntriesFail) {
       print("EntriesFail: ${action.err}");
     } else if (action is act.FetchEntriesOk) {

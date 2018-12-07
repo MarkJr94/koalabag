@@ -6,11 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:redux/redux.dart';
 
 import 'package:koalabag/consts.dart';
-import 'package:koalabag/model/auth.dart';
-import 'package:koalabag/model/entry.dart';
+import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/state.dart';
 import 'package:koalabag/serializers.dart';
+import 'database.dart';
 
 // Custom Client
 class WallaClient extends http.BaseClient {
@@ -28,8 +28,6 @@ class WallaClient extends http.BaseClient {
     print('tok = $tok');
 
     request.headers['Authorization'] = 'Bearer $tok';
-//    request.url.queryParameters.putIfAbsent('access_token', () => tok);
-//    request.
 
     final resp = _inner.send(request);
 
@@ -138,7 +136,7 @@ class RealAuthDao implements AuthDao {
 
       await prefs.setString(Prefs.auth, jsonEncode(js));
 
-      return auth.rebuild((b) => b..refresh_token = firstAuth.refresh_token);
+      return auth;
     } else {
       throw Exception("Network Error: ${resp.statusCode}");
     }
@@ -152,7 +150,7 @@ abstract class EntryDao {
 
   Stream<List<Entry>> fetchEntries(Auth auth);
 
-  Future<Entry> loadEntryById(final String id);
+  Future<Entry> loadEntryById(final int id);
 
   Future<String> add(Entry entry);
 }
@@ -172,9 +170,8 @@ class ED implements EntryDao {
   }
 
   @override
-  Future<Entry> loadEntryById(String id) {
-    // TODO: implement entryById
-    return null;
+  Future<Entry> loadEntryById(int id) {
+    return _provider.getEntry(id);
   }
 
   @override
@@ -187,6 +184,7 @@ class ED implements EntryDao {
 
     var uri = first;
 
+    // Pagination
     do {
       final resp = await _client.get(uri);
       if (resp.statusCode != 200) {
@@ -199,11 +197,8 @@ class ED implements EntryDao {
       assert(jsonEntries is List);
 
       yield (jsonEntries as List).map((jEnt) {
-//        print("jEnt = $jEnt");
         return Entry.fromJson(jEnt);
       }).toList();
-
-      // Pagination
 
       final nextObj = js['_links']['next'];
       uri = null;
