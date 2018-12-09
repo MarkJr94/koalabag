@@ -1,14 +1,14 @@
 import 'package:koalabag/model/auth.dart';
-import 'package:koalabag/model/entry.dart';
 import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/state.dart';
+import 'package:koalabag/redux/entry.dart';
 
 AppState appReducer(AppState state, action) {
-  return new AppState(
-    auth: _authReducer(state.auth, action),
-    authState: _authStateReducer(state.authState, action),
-    entries: _entriesReducer(state.entries, action),
-  );
+  return state.rebuild((b) => b
+    ..auth.replace(_authReducer(state.auth, action))
+    ..isAuthorizing = _isAuthingReducer(state.isAuthorizing, action)
+    ..authState = _authStateReducer(state.authState, action)
+    ..entry.replace(entryReducer(state.entry, action)));
 }
 
 AuthState _authStateReducer(AuthState authState, final action) {
@@ -26,14 +26,6 @@ AuthState _authStateReducer(AuthState authState, final action) {
   }
 }
 
-List<Entry> _entriesReducer(List<Entry> entries, action) {
-  if (action is act.LoadEntriesOk) {
-    return action.entries;
-  } else {
-    return entries;
-  }
-}
-
 Auth _authReducer(Auth auth, action) {
   if (action is act.AuthOk) {
     return action.auth;
@@ -42,4 +34,14 @@ Auth _authReducer(Auth auth, action) {
   }
 
   return auth;
+}
+
+bool _isAuthingReducer(bool isAuthing, final action) {
+  if (action is act.AuthReq) {
+    return true;
+  } else if (action is act.AuthOk || action is act.AuthFail) {
+    return false;
+  }
+
+  return isAuthing;
 }

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/state.dart';
 import 'package:redux/redux.dart';
-
 
 class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-
-    return StoreConnector<AppState,bool>(
+    return StoreConnector<AppState, bool>(
       converter: (Store<AppState> store) {
         return store.state.authState == AuthState.good;
       },
@@ -23,18 +21,17 @@ class Home extends StatelessWidget {
           body: Container(
             child: Center(
               child: Text("WELCOME"),
-              ),
             ),
-          );
+          ),
+        );
       },
       onWillChange: (bool isLoggedIn) {
-        if (isLoggedIn ) {
+        if (isLoggedIn) {
           Navigator.of(context).pushReplacementNamed('/articles');
-        } else  {
+        } else {
           Navigator.of(context).pushReplacementNamed('/login');
         }
       },
-
     );
   }
 }

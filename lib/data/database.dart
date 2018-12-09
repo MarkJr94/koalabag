@@ -1,13 +1,10 @@
+import 'package:built_collection/built_collection.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:koalabag/model.dart';
 
 const tableEntry = "entry";
 const columnId = "id";
-const columnKey = "key";
-const columnTitle = "title";
-const columnCreatedAt = "createdAt";
-const columnUrl = "url";
 
 class EntryProvider {
   Database db;
@@ -69,7 +66,7 @@ create table $tableEntry (
         .update(tableEntry, map, where: "$columnId = ?", whereArgs: [entry.id]);
   }
 
-  Future<int> saveAll(List<Entry> entries) async {
+  Future<int> saveAll(BuiltList<Entry> entries) async {
     return await db.transaction((tx) {
       final db = tx.batch();
 
@@ -85,11 +82,11 @@ create table $tableEntry (
     });
   }
 
-  Future<List<Entry>> loadAll() async {
+  Future<BuiltList<Entry>> loadAll() async {
     final maps =
         await db.query(tableEntry, columns: null, orderBy: 'created_at DESC');
 
-    return maps.map((map) => Entry.fromJson(map)).toList();
+    return BuiltList.of(maps.map((map) => Entry.fromJson(map)));
   }
 
   Future close() async => db.close();

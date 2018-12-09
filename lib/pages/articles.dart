@@ -1,11 +1,10 @@
-import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+
+import 'package:koalabag/redux/app/state.dart';
+import 'package:koalabag/redux/entry.dart';
 import 'package:koalabag/ui.dart';
 import 'package:koalabag/model.dart';
-import 'package:redux/redux.dart';
 
 class Articles extends StatelessWidget {
   Articles({Key key}) : super(key: key);
@@ -14,64 +13,45 @@ class Articles extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     print("Built Articles");
-
     return DefaultTabController(
         length: 3,
-        child: StoreConnector<AppState, _ViewModel>(
-          distinct: true,
-          converter: _ViewModel.fromStore,
-          builder: (context, vm) {
-            return Scaffold(
-              appBar: _appBar(
-                  onRefresh: () => vm.refresh(), onSync: () => vm.fetch()),
-              drawer: _drawer(textTheme, context),
-              body: Builder(builder: (context) {
-                return TabBarView(children: [
-                  _list("Favorites", vm, context, (e) => e.isStarred()),
-                  _list("Unread", vm, context, (e) => !e.isArchived()),
-                  _list("Archived", vm, context, (e) => e.isArchived()),
-                ]);
-              }),
-              floatingActionButton: Builder(builder: (context) {
-                return FloatingActionButton(
-                    child: Icon(Icons.add),
-                    onPressed: () {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text("Unimplemented!"),
-                        backgroundColor: Colors.deepPurple,
-                        duration: Duration(milliseconds: 500),
-                      ));
-//                    vm.fetch();
-//                      vm.store.
-                    });
-              }),
-            );
-          },
-          onWillChange: (vm) {
-            print('Articles onWillChange');
-          },
-        ));
+        child: Scaffold(
+            appBar: _appBar(),
+            drawer: _drawer(textTheme, context),
+            body: Builder(builder: (context) {
+              return TabBarView(children: [
+                _list("Favorites", context, (e) => e.starred()),
+                _list("Unread", context, (e) => !e.archived()),
+                _list("Archived", context, (e) => e.archived()),
+              ]);
+            }),
+            floatingActionButton: Builder(builder: (context) {
+              return StoreConnector<AppState, VoidCallback>(
+                converter: (store) {
+                  return () async {
+                    final Uri uri =
+                        await Navigator.of(context).push(MaterialPageRoute(
+                            fullscreenDialog: true,
+                            builder: (context) {
+                              return AddEntryDialog();
+                            }));
+
+                    if (null != uri) {
+                      store.dispatch(AddEntry(uri: uri));
+                    }
+                  };
+                },
+                builder: (context, callback) {
+                  return FloatingActionButton(
+                      child: Icon(Icons.add), onPressed: callback);
+                },
+              );
+            })));
   }
 
-  EntryList _list(final String title, final _ViewModel vm, BuildContext context,
-      bool Function(Entry) filter) {
-    final noOp = (idx, entry) {
-      Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text("Unimplemented!"),
-        backgroundColor: Colors.deepPurple,
-        duration: Duration(milliseconds: 500),
-      ));
-    };
-
-    // TODO
-    final EntryListHolder eh = EntryListHolder(
-        onStar: noOp,
-        onCheck: noOp,
-        onDelete: noOp,
-        onRefresh: () => Future.sync(() => vm.fetch()));
-    return EntryList(
-        entries: BuiltList.of(vm.store.state.entries.where(filter)),
-        listener: eh);
+  EntryList _list(
+      final String title, BuildContext context, bool Function(Entry) filter) {
+    return EntryList(key: UniqueKey(), filter: filter);
   }
 
   Drawer _drawer(TextTheme theme, BuildContext context) {
@@ -119,21 +99,16 @@ class Articles extends StatelessWidget {
     );
   }
 
-  Widget _appBar(
-      {@required VoidCallback onRefresh, @required VoidCallback onSync}) {
+  Widget _appBar() {
     final mkTab = ({String text, IconData icon}) {
       return Tab(
-        text: text,
+//        text: text,
         icon: Icon(icon),
       );
     };
 
     return AppBar(
       title: Text("Articles"),
-      actions: <Widget>[
-        IconButton(icon: Icon(Icons.refresh), onPressed: onRefresh),
-        IconButton(icon: Icon(Icons.sync), onPressed: onSync),
-      ],
       bottom: TabBar(
         tabs: <Widget>[
           mkTab(text: "Favorites", icon: Icons.star),
@@ -147,38 +122,4 @@ class Articles extends StatelessWidget {
   void _pushSettings(BuildContext context) {
     Navigator.of(context).pushNamed('/settings');
   }
-}
-
-class _ViewModel {
-  final Store<AppState> store;
-  final BuiltList<int> entryIds;
-
-  _ViewModel({@required this.store, @required this.entryIds});
-
-  static _ViewModel fromStore(Store<AppState> store) {
-    final list = BuiltList.of(store.state.entries.map((e) => e.id));
-    return _ViewModel(store: store, entryIds: list);
-  }
-
-  void fetch() {
-    store.dispatch(act.FetchEntries());
-  }
-
-  void refresh() {
-    store.dispatch(act.AuthRefresh());
-  }
-
-  Entry hydrate(final int id) {
-    return store.state?.entries?.firstWhere((e) => e.id == id);
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ViewModel &&
-          runtimeType == other.runtimeType &&
-          entryIds == other.entryIds;
-
-  @override
-  int get hashCode => entryIds.hashCode;
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,7 +9,7 @@ import 'package:redux/redux.dart';
 import 'package:koalabag/consts.dart';
 import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/state.dart';
 import 'package:koalabag/serializers.dart';
 import 'database.dart';
 
@@ -24,8 +25,7 @@ class WallaClient extends http.BaseClient {
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    final tok = _store.state.auth?.access_token;
-    print('tok = $tok');
+    final tok = _store.state.auth?.accessToken;
 
     request.headers['Authorization'] = 'Bearer $tok';
 
@@ -110,9 +110,9 @@ class RealAuthDao implements AuthDao {
   Future<Auth> refresh(Auth firstAuth) async {
     final params = {
       'grant_type': 'refresh_token',
-      'client_id': firstAuth.client_id,
-      'client_secret': firstAuth.client_secret,
-      'refresh_token': firstAuth.refresh_token,
+      'client_id': firstAuth.clientId,
+      'client_secret': firstAuth.clientSecret,
+      'refresh_token': firstAuth.refreshToken,
     };
 
     final parsed = Uri.parse(firstAuth.origin);
@@ -126,8 +126,8 @@ class RealAuthDao implements AuthDao {
     if (resp.statusCode == 200 || resp.statusCode == 302) {
       Map<String, dynamic> js = json.decode(resp.body);
 
-      js['client_id'] = firstAuth.client_id;
-      js['client_secret'] = firstAuth.client_secret;
+      js['client_id'] = firstAuth.clientId;
+      js['client_secret'] = firstAuth.clientSecret;
       js['origin'] = uri.scheme + '://' + uri.host;
 
       final auth = serializers.deserializeWith(Auth.serializer, js);
@@ -144,15 +144,20 @@ class RealAuthDao implements AuthDao {
 }
 
 abstract class EntryDao {
-  Future<List<Entry>> loadEntries();
+  Future<BuiltList<Entry>> loadEntries();
 
-  Future<bool> mergeSaveEntries(List<Entry> entries);
+  Future<bool> mergeSaveEntries(BuiltList<Entry> entries);
 
-  Stream<List<Entry>> fetchEntries(Auth auth);
+  Stream<BuiltList<Entry>> fetchEntries(Auth auth);
 
   Future<Entry> loadEntryById(final int id);
 
-  Future<String> add(Entry entry);
+  Future<Entry> add(Auth auth, Uri uri);
+
+  Future<Entry> changeEntry(Auth auth, Entry entry,
+      {bool starred, bool archived});
+
+  Future<Entry> updateEntry(Entry entry);
 }
 
 class ED implements EntryDao {
@@ -164,9 +169,33 @@ class ED implements EntryDao {
         _provider = provider;
 
   @override
-  Future<String> add(Entry entry) {
-    // TODO: implement add
-    return null;
+  Future<Entry> add(Auth auth, Uri articleUri) async {
+    final parsed = Uri.parse(auth.origin);
+    final uri = Uri(
+        scheme: parsed.scheme,
+        host: parsed.host,
+        path: Consts.apiPath + '/entries.json');
+
+    final params = {
+      'url': articleUri.toString(),
+    };
+
+    print('addEntry uri =  $uri');
+    print('addEntry params =  $params');
+
+    final resp = await _client.post(uri, body: params);
+
+//    var uri = first;
+    if (resp.statusCode != 200) {
+      throw Exception(
+          "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
+    }
+
+    print('addEntry resp.body =  ${resp.body}');
+
+    final js = jsonDecode(resp.body);
+
+    return Entry.fromJson(js);
   }
 
   @override
@@ -175,7 +204,7 @@ class ED implements EntryDao {
   }
 
   @override
-  Stream<List<Entry>> fetchEntries(Auth auth) async* {
+  Stream<BuiltList<Entry>> fetchEntries(Auth auth) async* {
     final parsed = Uri.parse(auth.origin);
     final first = Uri(
         scheme: parsed.scheme,
@@ -196,9 +225,9 @@ class ED implements EntryDao {
       final jsonEntries = js['_embedded']['items'];
       assert(jsonEntries is List);
 
-      yield (jsonEntries as List).map((jEnt) {
+      yield BuiltList.of((jsonEntries as List).map((jEnt) {
         return Entry.fromJson(jEnt);
-      }).toList();
+      }));
 
       final nextObj = js['_links']['next'];
       uri = null;
@@ -217,14 +246,52 @@ class ED implements EntryDao {
     } while (null != uri);
   }
 
-  Future<bool> mergeSaveEntries(List<Entry> entries) async {
-    print('mergeSave 10 entries');
+  Future<bool> mergeSaveEntries(BuiltList<Entry> entries) async {
     final rows = await _provider.saveAll(entries);
     return rows != 0;
   }
 
+  Future<Entry> updateEntry(Entry entry) async {
+    final updated = await _provider.insert(entry);
+    return updated;
+  }
+
   @override
-  Future<List<Entry>> loadEntries() {
+  Future<BuiltList<Entry>> loadEntries() {
     return _provider.loadAll();
   }
+
+  @override
+  Future<Entry> changeEntry(Auth auth, Entry entry,
+      {bool starred, bool archived}) async {
+    final parsed = Uri.parse(auth.origin);
+    final uri = Uri(
+        scheme: parsed.scheme,
+        host: parsed.host,
+        path: Consts.apiPath + '/entries/${entry.id}.json');
+
+    final params = {
+      'starred': _b2i(starred ?? entry.starred()).toString(),
+      'archive': _b2i(archived ?? entry.archived()).toString(),
+    };
+
+    print('changeEntry uri =  $uri');
+    print('changeEntry params =  $params');
+
+    final resp = await _client.patch(uri, body: params);
+
+//    var uri = first;
+    if (resp.statusCode != 200) {
+      throw Exception(
+          "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
+    }
+
+    print('changeEntry resp.body =  ${resp.body}');
+
+    final js = jsonDecode(resp.body);
+
+    return Entry.fromJson(js);
+  }
 }
+
+int _b2i(bool it) => it ? 1 : 0;

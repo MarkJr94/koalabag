@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:http/http.dart' as http;
 import 'package:koalabag/data.dart';
+import 'package:koalabag/model.dart';
 import 'package:koalabag/pages.dart';
-import 'package:koalabag/redux/middlewares.dart' as mids;
-import 'package:koalabag/redux/reducers.dart';
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/middleware.dart' as mids;
+import 'package:koalabag/redux/app/reducer.dart';
+import 'package:koalabag/redux/app/state.dart';
+import 'package:koalabag/redux/entry.dart';
 import 'package:koalabag/consts.dart';
 import 'package:redux/redux.dart';
 import 'package:redux_logging/redux_logging.dart';
@@ -18,14 +20,20 @@ void main() async {
   final entryDao = ED(client: client, provider: entryProvider);
   print('entryDao = $entryDao');
 
+//  auth: null, entries: BuiltList(), authState: AuthState.bad
+
   final store = Store<AppState>(appReducer,
-      initialState:
-          AppState(auth: null, entries: List(), authState: AuthState.bad),
+      initialState: AppState((b) => b
+        ..isAuthorizing = false
+        ..auth.replace(Auth.empty())
+        ..authState = AuthState.fetching
+        ..entry.replace(EntryState.empty())),
+//        ..entry.entries.replace((b) => {})),
       middleware: [
         LoggingMiddleware.printer(),
         mids.AuthMiddleware(RealAuthDao()),
-        mids.EntryMiddleware(entryDao),
-      ]);
+//        mids.EntryMiddleware(entryDao),
+      ]..addAll(createEntryMiddle(entryDao)));
 
   client.store = store;
   runApp(MyApp(

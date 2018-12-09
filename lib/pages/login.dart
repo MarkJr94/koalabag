@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:koalabag/consts.dart';
 import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/state.dart';
 import 'package:redux/redux.dart';
 
 class LoginPage extends StatelessWidget {

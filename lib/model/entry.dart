@@ -24,16 +24,20 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
   @nullable
   String get content;
 
-  DateTime get created_at;
+  @BuiltValueField(wireName: 'created_at')
+  DateTime get createdAt;
 
+  @BuiltValueField(wireName: 'domain_name')
   @nullable
-  String get domain_name;
+  String get domainName;
 
   int get id;
 
-  int get is_archived;
+  @BuiltValueField(wireName: 'is_archived')
+  int get isArchived;
 
-  int get is_starred;
+  @BuiltValueField(wireName: 'is_starred')
+  int get isStarred;
 
   @nullable
   String get language;
@@ -41,24 +45,30 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
   @nullable
   String get mimetype;
 
+  @BuiltValueField(wireName: 'preview_picture')
   @nullable
-  String get preview_picture;
+  String get previewPicture;
 
-  int get reading_time;
+  @BuiltValueField(wireName: 'reading_time')
+  int get readingTime;
 
   BuiltList<Tag> get tags;
 
   String get title;
 
-  DateTime get updated_at;
+  @BuiltValueField(wireName: 'updated_at')
+  DateTime get updatedAt;
 
   String get url;
 
-  String get user_email;
+  @BuiltValueField(wireName: 'user_email')
+  String get userEmail;
 
-  int get user_id;
+  @BuiltValueField(wireName: 'user_id')
+  int get userId;
 
-  String get user_name;
+  @BuiltValueField(wireName: 'user_name')
+  String get userName;
 
   Entry._();
 
@@ -80,11 +90,11 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
     return serializers.deserializeWith(Entry.serializer, map);
   }
 
-  bool isStarred() {
-    return is_starred != 0;
+  bool starred() {
+    return isStarred != 0;
   }
 
-  bool isArchived() {
-    return is_archived != 0;
+  bool archived() {
+    return isArchived != 0;
   }
 }

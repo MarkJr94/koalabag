@@ -1,7 +1,7 @@
 import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/state.dart';
+import 'package:koalabag/redux/app/state.dart';
 import 'package:redux/redux.dart';
 
 class AuthMiddleware extends MiddlewareClass<AppState> {
@@ -11,6 +11,13 @@ class AuthMiddleware extends MiddlewareClass<AppState> {
 
   @override
   void call(Store<AppState> store, action, NextDispatcher next) {
+    // Ignore requests if current one in progress
+    if (store.state.isAuthorizing && action is act.AuthReq) {
+      print("Ignoring auth request: $action");
+//      next(action);
+      return;
+    }
+
     if (action is act.AuthLogin) {
       _dao
           .login(action.uri,
@@ -34,43 +41,6 @@ class AuthMiddleware extends MiddlewareClass<AppState> {
           .catchError((e) => print("Error logging out??? $e"));
     } else if (action is act.AuthRefreshFail) {
       store.dispatch(act.AuthLogout());
-      next(action);
-    }
-
-    next(action);
-  }
-}
-
-class EntryMiddleware extends MiddlewareClass<AppState> {
-  EntryDao _dao;
-
-  EntryMiddleware(this._dao);
-
-  @override
-  void call(Store<AppState> store, action, NextDispatcher next) {
-    if (action is act.LoadEntries) {
-      _dao
-          .loadEntries()
-          .then((entries) => store.dispatch(act.LoadEntriesOk(entries)))
-          .catchError((err) => store.dispatch(act.EntriesFail(err)));
-    } else if (action is act.FetchEntries) {
-      _dao
-          .fetchEntries(store.state.auth)
-          .fold(List<Entry>(), (List<Entry> acc, List<Entry> batch) {
-            print("Got a batch of ${batch.length} entries");
-            acc.addAll(batch);
-
-            return acc;
-          })
-          .then((entries) => store.dispatch(act.FetchEntriesOk(entries)))
-          .catchError((err) => store.dispatch(act.EntriesFail(err)));
-    } else if (action is act.EntriesFail) {
-      print("EntriesFail: ${action.err}");
-    } else if (action is act.FetchEntriesOk) {
-      _dao
-          .mergeSaveEntries(action.entries)
-          .then((_) => store.dispatch(act.LoadEntries()))
-          .catchError((err) => store.dispatch(act.EntriesFail(err)));
     }
 
     next(action);
