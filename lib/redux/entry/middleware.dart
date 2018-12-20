@@ -9,7 +9,7 @@ import 'package:redux/redux.dart';
 List<Middleware<AppState>> createEntryMiddle(EntryDao dao) {
   final load = _load(dao);
   final fetch = _fetch(dao);
-  final fail = _entriesFail(dao);
+  final fail = _entryFail(dao);
   final update = _updateEntries(dao);
   final changeOne = _changeOne(dao);
   final updateOne = _updateOne(dao);
@@ -18,7 +18,7 @@ List<Middleware<AppState>> createEntryMiddle(EntryDao dao) {
   return [
     TypedMiddleware<AppState, LoadEntries>(load),
     TypedMiddleware<AppState, FetchEntries>(fetch),
-    TypedMiddleware<AppState, EntriesFail>(fail),
+    TypedMiddleware<AppState, EntryFail>(fail),
     TypedMiddleware<AppState, UpdateEntries>(update),
     TypedMiddleware<AppState, ChangeEntry>(changeOne),
     TypedMiddleware<AppState, UpdateEntry>(updateOne),
@@ -140,10 +140,10 @@ Middleware<AppState> _updateEntries(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _entriesFail(EntryDao dao) {
+Middleware<AppState> _entryFail(EntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) {
-    assert(action is EntriesFail);
-    final EntriesFail _act = action;
+    assert(action is EntryFail);
+    final EntryFail _act = action;
     print("EntriesFail: ${_act.err}");
 
     next(action);

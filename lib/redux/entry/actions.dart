@@ -4,15 +4,25 @@ import 'package:koalabag/model/entry.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:meta/meta.dart';
 
-class LoadEntries {}
+class EntryReq {}
 
-class FetchEntries {
+class EntryFail {
+  final dynamic err;
+
+  EntryFail(this.err);
+}
+
+class EntrySync {}
+
+class LoadEntries extends EntryReq {}
+
+class FetchEntries extends EntryReq {
   final Completer<Null> completer;
 
   FetchEntries(this.completer);
 }
 
-class UpdateEntries {
+class UpdateEntries extends EntryReq {
   final BuiltList<Entry> entries;
 
   UpdateEntries(this.entries);
@@ -24,13 +34,11 @@ class LoadEntriesOk {
   LoadEntriesOk(this.entries);
 }
 
-class EntriesFail {
-  final dynamic err;
-
-  EntriesFail(this.err);
+class EntriesFail extends EntryFail {
+  EntriesFail(dynamic err) : super(err);
 }
 
-class ChangeEntry {
+class ChangeEntry extends EntryReq {
   bool starred;
   bool archived;
   final Entry entry;
@@ -66,10 +74,4 @@ class AddEntryOk {
   final Entry entry;
 
   AddEntryOk(this.entry);
-}
-
-class EntryFail {
-  final dynamic err;
-
-  EntryFail(this.err);
 }
