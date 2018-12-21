@@ -1,25 +1,21 @@
-import 'package:built_collection/built_collection.dart';
-
 import 'package:koalabag/data/repository.dart';
-import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/entry.dart';
 import 'package:koalabag/redux/app/state.dart';
+
 import 'package:redux/redux.dart';
 
 List<Middleware<AppState>> createEntryMiddle(EntryDao dao) {
   final load = _load(dao);
-  final fetch = _fetch(dao);
   final fail = _entryFail(dao);
-  final update = _updateEntries(dao);
   final changeOne = _changeOne(dao);
   final updateOne = _updateOne(dao);
   final addOne = _addOne(dao);
+  final sync = _sync(dao);
 
   return [
+    TypedMiddleware<AppState, EntrySync>(sync),
     TypedMiddleware<AppState, LoadEntries>(load),
-    TypedMiddleware<AppState, FetchEntries>(fetch),
     TypedMiddleware<AppState, EntryFail>(fail),
-    TypedMiddleware<AppState, UpdateEntries>(update),
     TypedMiddleware<AppState, ChangeEntry>(changeOne),
     TypedMiddleware<AppState, UpdateEntry>(updateOne),
     TypedMiddleware<AppState, AddEntry>(addOne),
@@ -39,18 +35,14 @@ Middleware<AppState> _load(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _fetch(EntryDao dao) {
+Middleware<AppState> _sync(EntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
-    assert(action is FetchEntries);
-    final FetchEntries _act = action;
+    assert(action is EntrySync);
+    final EntrySync _act = action;
 
     try {
-      var entries = await dao.fetchEntries(store.state.auth).fold(
-          BuiltList<Entry>(), (BuiltList<Entry> acc, BuiltList<Entry> batch) {
-        print("Got a batch of ${batch.length} entries");
-        return acc.rebuild((b) => b..addAll(batch));
-      });
-      store.dispatch(UpdateEntries(entries));
+      await dao.sync(store.state.auth);
+      store.dispatch(LoadEntries());
       _act.completer.complete();
     } catch (err) {
       store.dispatch(EntriesFail(err));
@@ -125,21 +117,6 @@ Middleware<AppState> _updateOne(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _updateEntries(EntryDao dao) {
-  return (Store<AppState> store, dynamic action, NextDispatcher next) async {
-    assert(action is UpdateEntries);
-    final UpdateEntries _act = action;
-    try {
-      await dao.mergeSaveEntries(_act.entries);
-      store.dispatch(LoadEntries());
-    } catch (err) {
-      store.dispatch(EntriesFail(err));
-    }
-
-    next(action);
-  };
-}
-
 Middleware<AppState> _entryFail(EntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) {
     assert(action is EntryFail);
@@ -149,5 +126,3 @@ Middleware<AppState> _entryFail(EntryDao dao) {
     next(action);
   };
 }
-
-// TODO WORK ON SYNCING

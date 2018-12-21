@@ -12,21 +12,15 @@ class EntryFail {
   EntryFail(this.err);
 }
 
-class EntrySync {}
-
-class LoadEntries extends EntryReq {}
-
-class FetchEntries extends EntryReq {
+class EntrySync extends EntryReq {
   final Completer<Null> completer;
 
-  FetchEntries(this.completer);
+  EntrySync(this.completer);
 }
 
-class UpdateEntries extends EntryReq {
-  final BuiltList<Entry> entries;
+class EntrySyncOk {}
 
-  UpdateEntries(this.entries);
-}
+class LoadEntries extends EntryReq {}
 
 class LoadEntriesOk {
   final BuiltList<Entry> entries;
@@ -64,7 +58,7 @@ class UpdateEntryOk {
   UpdateEntryOk(this.entry);
 }
 
-class AddEntry {
+class AddEntry extends EntryReq {
   final Uri uri;
 
   AddEntry({@required this.uri});

@@ -5,12 +5,15 @@ import 'package:koalabag/model.dart';
 
 const tableEntry = "entry";
 const columnId = "id";
+const columnUrl = "url";
+const columnCreatedAt = "created_at";
 
 class EntryProvider {
   Database db;
 
   Future open(String path) async {
-    final dbPath = ":memory:";
+//    final dbPath = ":memory:";
+    final dbPath = "koalabag.db";
 
     db = await openDatabase(dbPath, version: 1,
         onCreate: (Database db, int version) async {
@@ -87,6 +90,32 @@ create table $tableEntry (
         await db.query(tableEntry, columns: null, orderBy: 'created_at DESC');
 
     return BuiltList.of(maps.map((map) => Entry.fromJson(map)));
+  }
+
+  Future<int> deleteMany(BuiltList<int> ids) async {
+    final inList = ids.join(', ');
+    final inParams = ids.map((_) => '?').join(',');
+
+    return await db.delete(tableEntry,
+        where: "$columnId IN ($inParams)", whereArgs: [inList]);
+  }
+
+  Future<BuiltList<int>> allIds() async {
+    final rows = await db.query(tableEntry,
+        columns: [columnId], orderBy: 'created_at DESC');
+    return BuiltList.of(rows.map((row) => row[columnId]));
+  }
+
+  Future<DateTime> getLatest() async {
+    final rows = await db.query(tableEntry,
+        columns: null, orderBy: 'created_at DESC', limit: 1);
+
+    if (rows.isNotEmpty) {
+      final entry = Entry.fromMap(rows[0]);
+      return entry.createdAt;
+    }
+
+    return DateTime.fromMicrosecondsSinceEpoch(0, isUtc: true);
   }
 
   Future close() async => db.close();

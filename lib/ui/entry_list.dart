@@ -14,9 +14,6 @@ import 'package:koalabag/ui.dart';
 class EntryList extends StatefulWidget {
   final bool Function(Entry) filter;
 
-//  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
-//      new GlobalKey<RefreshIndicatorState>();
-
   EntryList({Key key, @required this.filter}) : super(key: key);
 
   @override
@@ -40,49 +37,32 @@ class EntryListState extends State<EntryList>
   @override
   Widget build(BuildContext context) {
     return StoreConnector<AppState, _ViewModel>(
-      key: UniqueKey(),
-      distinct: true,
-      converter: _ViewModel.fromStore(filter),
-      builder: (BuildContext ctx, _ViewModel vm) {
-        return RefreshIndicator(
-            key: _refreshIndicatorKey,
-            onRefresh: vm.fetch,
-            child: ListView.builder(
-                key: new UniqueKey(),
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: vm.entryIds.length,
-                itemBuilder: (context, idx) {
-//                  if (entries != null) {
-//                    final entry = entries[idx];
-                  var id = vm.entryIds[idx];
-                  return EntryCard(
-                    entryId: id,
-                    key: ValueKey(id),
-                    onStarClick: vm.onStar,
-                    onDeleteClick: vm.noOp(context),
-                    onCheckClick: vm.onCheck,
-                  );
-//                  }
-                }));
-      },
-      onWillChange: (_) {
-        print("Built EntryList");
-      },
-    );
+        key: UniqueKey(),
+        distinct: true,
+        converter: _ViewModel.fromStore(filter),
+        builder: (BuildContext ctx, _ViewModel vm) {
+          return RefreshIndicator(
+              key: _refreshIndicatorKey,
+              onRefresh: vm.sync,
+              child: ListView.builder(
+                  key: new UniqueKey(),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: vm.entryIds.length,
+                  itemBuilder: (context, idx) {
+                    var id = vm.entryIds[idx];
+                    return EntryCard(
+                      entryId: id,
+                      key: ValueKey(id),
+                      onStarClick: vm.onStar,
+                      onDeleteClick: vm.noOp(context),
+                      onCheckClick: vm.onCheck,
+                    );
+                  }));
+        },
+        onWillChange: (_) {
+          print("Built EntryList");
+        });
   }
-}
-
-class EntryListHolder {
-  final void Function(int, Entry) onStar;
-  final void Function(int, Entry) onCheck;
-  final void Function(int, Entry) onDelete;
-  final Future<void> Function() onRefresh;
-
-  EntryListHolder(
-      {@required this.onStar,
-      @required this.onCheck,
-      @required this.onDelete,
-      @required this.onRefresh});
 }
 
 class _ViewModel {
@@ -102,8 +82,8 @@ class _ViewModel {
     };
   }
 
-  Future<void> fetch() {
-    final action = ent.FetchEntries(Completer());
+  Future<void> sync() {
+    final action = ent.EntrySync(Completer());
     store.dispatch(action);
     return action.completer.future;
   }

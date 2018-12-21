@@ -78,4 +78,6 @@ abstract class EntryDao {
       {bool starred, bool archived});
 
   Future<Entry> updateEntry(Entry entry);
+
+  Future<void> sync(Auth auth);
 }

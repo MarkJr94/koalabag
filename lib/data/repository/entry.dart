@@ -33,7 +33,6 @@ class ED implements EntryDao {
 
     final resp = await _client.post(uri, body: params);
 
-//    var uri = first;
     if (resp.statusCode != 200) {
       throw Exception(
           "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
@@ -52,12 +51,13 @@ class ED implements EntryDao {
   }
 
   @override
-  Stream<BuiltList<Entry>> fetchEntries(Auth auth) async* {
+  Stream<BuiltList<Entry>> fetchEntries(Auth auth, {int since = 0}) async* {
     final parsed = Uri.parse(auth.origin);
     final first = Uri(
         scheme: parsed.scheme,
         host: parsed.host,
-        path: Consts.apiPath + '/entries.json');
+        path: Consts.apiPath + '/entries.json',
+        queryParameters: {'perPage': '100', 'since': '$since'});
 
     var uri = first;
 
@@ -128,7 +128,6 @@ class ED implements EntryDao {
 
     final resp = await _client.patch(uri, body: params);
 
-//    var uri = first;
     if (resp.statusCode != 200) {
       throw Exception(
           "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
@@ -141,10 +140,34 @@ class ED implements EntryDao {
     return Entry.fromJson(js);
   }
 
-  Future<bool> sync() async {
-    // First check if all local entries exist
+  Future<void> sync(final Auth auth) async {
+    print("sync starts");
 
-    return false;
+    final localIds = BuiltSet.of(await _provider.allIds());
+    final latest = await _provider.getLatest();
+
+    final entryStream =
+        fetchEntries(auth, since: latest.millisecondsSinceEpoch);
+
+    print("localIds = $localIds");
+
+    final remoteEntries = await entryStream.fold(BuiltList<Entry>(),
+        (BuiltList<Entry> acc, BuiltList<Entry> batch) {
+      return acc.rebuild((b) => b..addAll(batch));
+    });
+
+    final remoteIds = BuiltSet.of(remoteEntries.map((e) => e.id));
+
+    final removed =
+        BuiltList.of(localIds.where((id) => !remoteIds.contains(id)));
+
+    print("Removed ids = $removed");
+
+    if (removed.isNotEmpty) {
+      await _provider.deleteMany(removed);
+    }
+
+    await mergeSaveEntries(remoteEntries);
   }
 }
 

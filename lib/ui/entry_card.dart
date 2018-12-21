@@ -68,14 +68,20 @@ class EntryCard extends StatelessWidget {
           child: ButtonBar(
             children: <Widget>[
               IconButton(
-                  icon: Icon(check),
-                  onPressed: () => onCheckClick(entryId, entry)),
+                icon: Icon(check),
+                onPressed: () => onCheckClick(entryId, entry),
+                tooltip: 'Archive',
+              ),
               IconButton(
-                  icon: Icon(fav),
-                  onPressed: () => onStarClick(entryId, entry)),
+                icon: Icon(fav),
+                onPressed: () => onStarClick(entryId, entry),
+                tooltip: 'Favorite',
+              ),
               IconButton(
-                  icon: Icon(Icons.delete),
-                  onPressed: () => onDeleteClick(entryId, entry)),
+                icon: Icon(Icons.delete),
+                onPressed: () => onDeleteClick(entryId, entry),
+                tooltip: 'Delete',
+              ),
             ],
           ),
         ),

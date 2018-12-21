@@ -15,15 +15,18 @@ class Articles extends StatelessWidget {
     print("Built Articles");
     return DefaultTabController(
         length: 3,
+        initialIndex: 1,
         child: Scaffold(
             appBar: _appBar(),
             drawer: _drawer(textTheme, context),
             body: Builder(builder: (context) {
-              return TabBarView(children: [
-                _list("Favorites", context, (e) => e.starred()),
-                _list("Unread", context, (e) => !e.archived()),
-                _list("Archived", context, (e) => e.archived()),
-              ]);
+              return TabBarView(
+                children: [
+                  _list("Favorites", context, (e) => e.starred()),
+                  _list("Unread", context, (e) => !e.archived()),
+                  _list("Archived", context, (e) => e.archived()),
+                ],
+              );
             }),
             floatingActionButton: Builder(builder: (context) {
               return StoreConnector<AppState, VoidCallback>(
@@ -44,6 +47,9 @@ class Articles extends StatelessWidget {
                 builder: (context, callback) {
                   return FloatingActionButton(
                       child: Icon(Icons.add), onPressed: callback);
+                },
+                onInit: (store) {
+                  store.dispatch(LoadEntries());
                 },
               );
             })));
