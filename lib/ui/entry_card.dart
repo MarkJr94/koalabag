@@ -12,6 +12,7 @@ class EntryCard extends StatelessWidget {
   final EntryCardCallback onCheckClick;
   final EntryCardCallback onStarClick;
   final EntryCardCallback onDeleteClick;
+  final void Function(Entry) onEntryTap;
 
 //  Entry entry;
 
@@ -21,10 +22,13 @@ class EntryCard extends StatelessWidget {
     @required this.onCheckClick,
     @required this.onStarClick,
     @required this.onDeleteClick,
+    @required this.onEntryTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
     return StoreConnector<AppState, Entry>(
       distinct: true,
       converter: (store) =>
@@ -35,7 +39,10 @@ class EntryCard extends StatelessWidget {
             padding: EdgeInsets.all(8.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: _mainColumn(context, entry),
+              children: [
+                _mainColumn(context, entry, tt),
+                _bottomBar(entry, tt)
+              ],
             ),
           ),
         );
@@ -43,14 +50,54 @@ class EntryCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _mainColumn(BuildContext context, Entry entry) {
+  Widget _mainColumn(BuildContext context, Entry entry, TextTheme tt) {
     final tt = Theme.of(context).textTheme;
 
+    var mainColumn = <Widget>[
+      Padding(
+        padding: EdgeInsets.only(bottom: 4.0),
+        child: Text(
+          entry.title,
+          style: tt.headline,
+          softWrap: true,
+        ),
+      ),
+      Padding(
+        padding: EdgeInsets.only(bottom: 4.0),
+        child: Text(
+          entry.domainName,
+          style: tt.caption,
+          softWrap: true,
+        ),
+      ),
+    ];
+
+    if (null != entry.previewPicture) {
+      final image = CachedNetworkImage(
+        imageUrl: entry.previewPicture,
+        placeholder: CircularProgressIndicator(),
+        errorWidget: Icon(Icons.error),
+        height: 128.0,
+        width: double.infinity,
+        fit: BoxFit.fitWidth,
+      );
+
+      mainColumn.add(image);
+    }
+
+    return _enableTap(
+        Column(
+          children: mainColumn,
+        ),
+        entry);
+  }
+
+  Widget _bottomBar(final Entry entry, final TextTheme tt) {
     final fav = entry.starred() ? Icons.star : Icons.star_border;
     final check =
         entry.archived() ? Icons.check_circle : Icons.check_circle_outline;
 
-    final bottomBar = Row(
+    return Row(
       mainAxisSize: MainAxisSize.max,
       children: <Widget>[
         Padding(
@@ -87,40 +134,12 @@ class EntryCard extends StatelessWidget {
         ),
       ],
     );
-    var mainColumn = <Widget>[
-      Padding(
-        padding: EdgeInsets.only(bottom: 4.0),
-        child: Text(
-          entry.title,
-          style: tt.headline,
-          softWrap: true,
-        ),
-      ),
-      Padding(
-        padding: EdgeInsets.only(bottom: 4.0),
-        child: Text(
-          entry.domainName,
-          style: tt.caption,
-          softWrap: true,
-        ),
-      ),
-    ];
+  }
 
-    if (null != entry.previewPicture) {
-      final image = CachedNetworkImage(
-        imageUrl: entry.previewPicture,
-        placeholder: CircularProgressIndicator(),
-        errorWidget: Icon(Icons.error),
-        height: 128.0,
-        width: double.infinity,
-        fit: BoxFit.fitWidth,
-      );
-
-      mainColumn.add(image);
-    }
-
-    mainColumn.add(bottomBar);
-
-    return mainColumn;
+  Widget _enableTap(Widget w, Entry entry) {
+    return GestureDetector(
+      child: w,
+      onTap: () => onEntryTap(entry),
+    );
   }
 }
