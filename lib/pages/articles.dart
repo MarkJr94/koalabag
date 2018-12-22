@@ -6,11 +6,30 @@ import 'package:koalabag/redux/entry.dart';
 import 'package:koalabag/ui.dart';
 import 'package:koalabag/model.dart';
 
-class Articles extends StatelessWidget {
-  Articles({Key key}) : super(key: key);
+class Articles extends StatefulWidget {
+  @override
+  State<Articles> createState() {
+    // TODO: implement createState
+    return ArticleState();
+  }
+}
+
+class ArticleState extends State<Articles> {
+  final int Function(Entry, Entry) sortOld =
+      (a, b) => a.createdAt.compareTo(b.createdAt);
+
+  final int Function(Entry, Entry) sortRecent =
+      (a, b) => b.createdAt.compareTo(a.createdAt);
+
+  int Function(Entry, Entry) currentSort;
+
+  ArticleState() {
+    currentSort = sortRecent;
+  }
 
   @override
   Widget build(BuildContext context) {
+    // TODO: implement build
     final textTheme = Theme.of(context).textTheme;
     print("Built Articles");
     return DefaultTabController(
@@ -57,7 +76,11 @@ class Articles extends StatelessWidget {
 
   EntryList _list(
       final String title, BuildContext context, bool Function(Entry) filter) {
-    return EntryList(key: UniqueKey(), filter: filter);
+    return EntryList(
+      key: UniqueKey(),
+      filter: filter,
+      sort: currentSort,
+    );
   }
 
   Drawer _drawer(TextTheme theme, BuildContext context) {
@@ -115,6 +138,13 @@ class Articles extends StatelessWidget {
 
     return AppBar(
       title: Text("Articles"),
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.search),
+          onPressed: search,
+        ),
+        IconButton(icon: Icon(Icons.sort), onPressed: flipSort),
+      ],
       bottom: TabBar(
         tabs: <Widget>[
           mkTab(text: "Favorites", icon: Icons.star),
@@ -127,5 +157,76 @@ class Articles extends StatelessWidget {
 
   void _pushSettings(BuildContext context) {
     Navigator.of(context).pushNamed('/settings');
+  }
+
+  void flipSort() {
+    print("flipSort");
+    setState(() {
+      if (currentSort == sortRecent) {
+        currentSort = sortOld;
+      } else {
+        currentSort = sortRecent;
+      }
+    });
+  }
+
+  void search() {
+    showSearch(
+      context: context,
+      delegate: EntrySearchDelegate(),
+    );
+  }
+}
+
+class EntrySearchDelegate extends SearchDelegate<Entry> {
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    // TODO: implement buildActions
+    return [
+      IconButton(
+          icon: Icon(Icons.clear),
+          onPressed: () {
+            query = "";
+          })
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    // TODO: implement buildLeading
+    return IconButton(
+        icon: Icon(Icons.arrow_back),
+        onPressed: () {
+          this.close(context, null);
+        });
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // TODO: implement buildResults
+    return EntrySearch(
+      query,
+      isSearch: true,
+    );
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    print("buildsuggestions: query = $query");
+    // TODO: implement buildSuggestions
+    return Center(
+      child: Text(
+        "Search: $query",
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  @override
+  ThemeData appBarTheme(BuildContext context) {
+    assert(context != null);
+    final ThemeData theme = Theme.of(context);
+    assert(theme != null);
+    return theme;
   }
 }

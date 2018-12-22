@@ -48,13 +48,16 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+//    context.get
     return StoreProvider(
         store: store,
         child: MaterialApp(
           title: 'Welcome to Koalabag',
-          theme: ThemeData(
-              primaryColor: Colors.red,
-              accentColor: Colors.pinkAccent,
+          theme: ThemeData.dark().copyWith(
+              primaryColor: Colors.red[500],
+              primaryColorDark: Colors.red[900],
+              primaryColorLight: Colors.red[100],
+              accentColor: Colors.orangeAccent,
               brightness: Brightness.dark),
           home: Home(),
           routes: <String, WidgetBuilder>{

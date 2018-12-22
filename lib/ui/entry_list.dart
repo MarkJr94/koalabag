@@ -13,23 +13,26 @@ import 'package:koalabag/ui.dart';
 
 class EntryList extends StatefulWidget {
   final bool Function(Entry) filter;
+  final int Function(Entry, Entry) sort;
 
-  EntryList({Key key, @required this.filter}) : super(key: key);
+  EntryList({Key key, @required this.filter, @required this.sort})
+      : super(key: key);
 
   @override
   State createState() {
-    return EntryListState(filter: filter);
+    return EntryListState(filter: filter, sort: sort);
   }
 }
 
 class EntryListState extends State<EntryList>
     with AutomaticKeepAliveClientMixin<EntryList> {
   final bool Function(Entry) filter;
+  final int Function(Entry, Entry) sort;
 
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
 
-  EntryListState({@required this.filter});
+  EntryListState({@required this.filter, @required this.sort});
 
   @override
   bool get wantKeepAlive => true;
@@ -39,7 +42,7 @@ class EntryListState extends State<EntryList>
     return StoreConnector<AppState, _ViewModel>(
         key: UniqueKey(),
         distinct: true,
-        converter: _ViewModel.fromStore(filter),
+        converter: _ViewModel.fromStore(filter, sort),
         builder: (BuildContext ctx, _ViewModel vm) {
           return RefreshIndicator(
               key: _refreshIndicatorKey,
@@ -69,16 +72,23 @@ class _ViewModel {
   final Store<AppState> store;
   final BuiltList<int> entryIds;
   final bool Function(Entry) filter;
+  final int Function(Entry, Entry) sort;
 
   _ViewModel(
-      {@required this.store, @required this.entryIds, @required this.filter});
+      {@required this.store,
+      @required this.entryIds,
+      @required this.filter,
+      @required this.sort});
 
   static _ViewModel Function(Store<AppState>) fromStore(
-      bool Function(Entry) filter) {
+      bool Function(Entry) filter, int Function(Entry, Entry) sort) {
     return (Store<AppState> store) {
-      final list = BuiltList.of(
-          store.state.entry.entries.where(filter).map((e) => e.id));
-      return _ViewModel(store: store, entryIds: list, filter: filter);
+      final list = BuiltList.of(store.state.entry.entries
+          .rebuild((b) => b..sort(sort))
+          .where(filter)
+          .map((e) => e.id));
+      return _ViewModel(
+          store: store, entryIds: list, filter: filter, sort: sort);
     };
   }
 
