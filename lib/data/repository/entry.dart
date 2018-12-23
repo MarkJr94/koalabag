@@ -8,11 +8,11 @@ import 'package:koalabag/model.dart';
 import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/data/database.dart';
 
-class ED implements EntryDao {
+class EntryDao implements AbstractEntryDao {
   final WallaClient _client;
   final EntryProvider _provider;
 
-  ED({@required WallaClient client, @required EntryProvider provider})
+  EntryDao({@required WallaClient client, @required EntryProvider provider})
       : _client = client,
         _provider = provider;
 

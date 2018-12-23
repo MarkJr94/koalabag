@@ -4,7 +4,7 @@ import 'package:koalabag/redux/app/state.dart';
 
 import 'package:redux/redux.dart';
 
-List<Middleware<AppState>> createEntryMiddle(EntryDao dao) {
+List<Middleware<AppState>> createEntryMiddle(AbstractEntryDao dao) {
   final load = _load(dao);
   final fail = _entryFail(dao);
   final changeOne = _changeOne(dao);
@@ -22,7 +22,7 @@ List<Middleware<AppState>> createEntryMiddle(EntryDao dao) {
   ];
 }
 
-Middleware<AppState> _load(EntryDao dao) {
+Middleware<AppState> _load(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     try {
       var entries = await dao.loadEntries();
@@ -35,7 +35,7 @@ Middleware<AppState> _load(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _sync(EntryDao dao) {
+Middleware<AppState> _sync(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is EntrySync);
     final EntrySync _act = action;
@@ -53,7 +53,7 @@ Middleware<AppState> _sync(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _changeOne(EntryDao dao) {
+Middleware<AppState> _changeOne(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is ChangeEntry);
     final ChangeEntry _act = action;
@@ -74,7 +74,7 @@ Middleware<AppState> _changeOne(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _addOne(EntryDao dao) {
+Middleware<AppState> _addOne(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is AddEntry);
     final AddEntry _act = action;
@@ -99,7 +99,7 @@ Middleware<AppState> _addOne(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _updateOne(EntryDao dao) {
+Middleware<AppState> _updateOne(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is UpdateEntry);
     final UpdateEntry _act = action;
@@ -117,7 +117,7 @@ Middleware<AppState> _updateOne(EntryDao dao) {
   };
 }
 
-Middleware<AppState> _entryFail(EntryDao dao) {
+Middleware<AppState> _entryFail(AbstractEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) {
     assert(action is EntryFail);
     final EntryFail _act = action;

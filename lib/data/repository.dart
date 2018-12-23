@@ -45,9 +45,32 @@ class WallaClient extends http.BaseClient {
   }
 }
 
+class Global {
+  static final Global _singleton = new Global._internal();
+  Dao _dao;
+
+  factory Global() {
+    return _singleton;
+  }
+
+  Global._internal() {
+//    ... // initialization logic here
+  }
+
+  void init(Dao dao) {
+    _dao = dao;
+  }
+
+  get dao {
+    return _dao;
+  }
+
+//  ... // rest of the class
+}
+
 class Dao {
   AuthDao authDao;
-  EntryDao entryDao;
+  AbstractEntryDao entryDao;
 
   Dao({this.authDao, this.entryDao});
 }
@@ -63,7 +86,7 @@ abstract class AuthDao {
   Future<bool> logout();
 }
 
-abstract class EntryDao {
+abstract class AbstractEntryDao {
   Future<BuiltList<Entry>> loadEntries();
 
   Future<bool> mergeSaveEntries(BuiltList<Entry> entries);

@@ -12,15 +12,41 @@ import 'package:koalabag/consts.dart';
 import 'package:redux/redux.dart';
 import 'package:redux_logging/redux_logging.dart';
 
+class Global {
+  static final Global _singleton = new Global._internal();
+  Dao _dao;
+
+  factory Global() {
+    return _singleton;
+  }
+
+  Global._internal() {
+//    ... // initialization logic here
+  }
+
+  void init(Dao dao) {
+    _dao = dao;
+  }
+
+  get dao {
+    return _dao;
+  }
+
+//  ... // rest of the class
+}
+
 void main() async {
   final client = WallaClient(client: http.Client());
 
   final entryProvider = EntryProvider();
   await entryProvider.open(Consts.dbPath);
-  final entryDao = ED(client: client, provider: entryProvider);
+  final entryDao = EntryDao(client: client, provider: entryProvider);
   print('entryDao = $entryDao');
 
-//  auth: null, entries: BuiltList(), authState: AuthState.bad
+  final realAuthDao = RealAuthDao();
+  final dao = Dao(authDao: realAuthDao, entryDao: entryDao);
+
+  Global().init(dao);
 
   final store = Store<AppState>(appReducer,
       initialState: AppState((b) => b
@@ -28,11 +54,9 @@ void main() async {
         ..auth.replace(Auth.empty())
         ..authState = AuthState.fetching
         ..entry.replace(EntryState.empty())),
-//        ..entry.entries.replace((b) => {})),
       middleware: [
         LoggingMiddleware.printer(),
-        mids.AuthMiddleware(RealAuthDao()),
-//        mids.EntryMiddleware(entryDao),
+        mids.AuthMiddleware(realAuthDao),
       ]..addAll(createEntryMiddle(entryDao)));
 
   client.store = store;
@@ -48,7 +72,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-//    context.get
     return StoreProvider(
         store: store,
         child: MaterialApp(
