@@ -3,20 +3,11 @@ import 'package:built_value/serializer.dart';
 import 'package:built_collection/built_collection.dart';
 
 import 'package:koalabag/serializers.dart';
+import 'package:koalabag/model/entry_content.dart';
+import 'package:koalabag/model/entry_info.dart';
+import 'package:koalabag/model/tag.dart';
 
 part 'entry.g.dart';
-
-abstract class Tag implements Built<Tag, TagBuilder> {
-  static Serializer<Tag> get serializer => _$tagSerializer;
-
-  int get id;
-  String get label;
-  String get slug;
-
-  Tag._();
-
-  factory Tag([updates(TagBuilder b)]) = _$Tag;
-}
 
 abstract class Entry implements Built<Entry, EntryBuilder> {
   static Serializer<Entry> get serializer => _$entrySerializer;
@@ -96,5 +87,31 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
 
   bool archived() {
     return isArchived != 0;
+  }
+
+  EntryInfo toInfo() {
+    return EntryInfo((b) => b
+      ..createdAt = createdAt
+      ..domainName = domainName
+      ..id = id
+      ..isArchived = isArchived
+      ..isStarred = isStarred
+      ..language = language
+      ..mimetype = mimetype
+      ..previewPicture = previewPicture
+      ..readingTime = readingTime
+      ..tags.replace(tags)
+      ..title = title
+      ..updatedAt = updatedAt
+      ..url = url
+      ..userEmail = userEmail
+      ..userId = userId
+      ..userName = userName);
+  }
+
+  EntryContent toContent() {
+    return EntryContent((b) => b
+      ..id = id
+      ..content = content);
   }
 }
