@@ -1,14 +1,18 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:koalabag/consts.dart';
 import 'package:koalabag/model.dart';
+import 'package:koalabag/data/api.dart';
 import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/serializers.dart';
 
-class RealAuthDao implements AuthDao {
+class AuthDao implements IAuthDao {
+  final IAuthApi _api;
+
+  AuthDao(IAuthApi api) : _api = api;
+
   @override
   Future<Auth> loadLocal() async {
     final prefs = await SharedPreferences.getInstance();
@@ -20,28 +24,15 @@ class RealAuthDao implements AuthDao {
 
   @override
   Future<Auth> login(Uri uri, {String clientId, String clientSecret}) async {
-    final resp = await http.get(uri);
+    final auth =
+        await _api.login(uri, clientId: clientId, clientSecret: clientSecret);
 
-    if (resp.statusCode == 200 || resp.statusCode == 302) {
-      Map<String, dynamic> js = json.decode(resp.body);
+    final prefs = await SharedPreferences.getInstance();
 
-      js['client_id'] = clientId;
-      js['client_secret'] = clientSecret;
-      js['origin'] = uri.scheme + '://' + uri.host;
+    final js = serializers.serializeWith(Auth.serializer, auth);
 
-      print('js = $js');
-
-      final auth = serializers.deserializeWith(Auth.serializer, js);
-
-      print('auth = $auth');
-
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString(Prefs.auth, jsonEncode(js));
-      return auth;
-    } else {
-      throw Exception("Network Error: ${resp.statusCode}");
-    }
+    await prefs.setString(Prefs.auth, jsonEncode(js));
+    return auth;
   }
 
   @override
@@ -52,37 +43,13 @@ class RealAuthDao implements AuthDao {
 
   @override
   Future<Auth> refresh(Auth firstAuth) async {
-    final params = {
-      'grant_type': 'refresh_token',
-      'client_id': firstAuth.clientId,
-      'client_secret': firstAuth.clientSecret,
-      'refresh_token': firstAuth.refreshToken,
-    };
+    final auth = await _api.refresh(firstAuth);
 
-    final parsed = Uri.parse(firstAuth.origin);
-    final uri =
-        Uri(scheme: parsed.scheme, host: parsed.host, path: Consts.oauthPath);
+    final prefs = await SharedPreferences.getInstance();
 
-    final resp = await http.post(uri, body: params);
+    final js = serializers.serializeWith(Auth.serializer, auth);
 
-    print("refresh  resp { status: ${resp.statusCode}, body: ${resp.body}");
-
-    if (resp.statusCode == 200 || resp.statusCode == 302) {
-      Map<String, dynamic> js = json.decode(resp.body);
-
-      js['client_id'] = firstAuth.clientId;
-      js['client_secret'] = firstAuth.clientSecret;
-      js['origin'] = uri.scheme + '://' + uri.host;
-
-      final auth = serializers.deserializeWith(Auth.serializer, js);
-
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString(Prefs.auth, jsonEncode(js));
-
-      return auth;
-    } else {
-      throw Exception("Network Error: ${resp.statusCode}");
-    }
+    await prefs.setString(Prefs.auth, jsonEncode(js));
+    return auth;
   }
 }

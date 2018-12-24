@@ -5,9 +5,10 @@ import 'package:koalabag/redux/entry.dart';
 Reducer<EntryState> entryReducer = combineReducers([
   TypedReducer<EntryState, LoadEntries>(_onLoad),
   TypedReducer<EntryState, LoadEntriesOk>(_onLoadOk),
-  TypedReducer<EntryState, UpdateEntry>(_onUpdate),
-  TypedReducer<EntryState, UpdateEntryOk>(_onUpdateOk),
-  TypedReducer<EntryState, AddEntryOk>(_onAdd),
+  TypedReducer<EntryState, ChangeEntry>(_onChange),
+  TypedReducer<EntryState, ChangeEntryOk>(_onChangeOk),
+  TypedReducer<EntryState, AddEntry>(_onAdd),
+  TypedReducer<EntryState, AddEntryOk>(_onAddOk),
   TypedReducer<EntryState, EntrySync>(_onSync),
   TypedReducer<EntryState, EntrySyncOk>(_onSyncOk),
   TypedReducer<EntryState, EntryFail>(_onFail),
@@ -23,11 +24,11 @@ EntryState _onLoadOk(EntryState entry, LoadEntriesOk act) {
     ..entries.replace(act.entries));
 }
 
-EntryState _onUpdate(EntryState entry, UpdateEntry act) {
+EntryState _onChange(EntryState entry, ChangeEntry act) {
   return entry.rebuild((b) => b..isLoading = true);
 }
 
-EntryState _onUpdateOk(EntryState entryS, UpdateEntryOk action) {
+EntryState _onChangeOk(EntryState entryS, ChangeEntryOk action) {
   // Check if list contains entry
   final idx = entryS.entries.indexWhere((e) => e.id == action.entry.id);
 
@@ -58,6 +59,15 @@ EntryState _onSyncOk(EntryState entry, EntrySyncOk act) {
     ..isLoading = false);
 }
 
-EntryState _onAdd(EntryState entryS, AddEntryOk action) {
-  return entryS.rebuild((b) => b..entries.insert(0, action.entry));
+EntryState _onAdd(EntryState entryS, AddEntry action) {
+  return entryS.rebuild((b) => b
+    ..isLoading = true
+    ..isFetching = true);
+}
+
+EntryState _onAddOk(EntryState entryS, AddEntryOk action) {
+  return entryS.rebuild((b) => b
+    ..isFetching = false
+    ..isLoading = false
+    ..entries.insert(0, action.entry));
 }

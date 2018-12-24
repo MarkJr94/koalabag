@@ -5,45 +5,8 @@ export 'package:koalabag/data/repository/auth.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:redux/redux.dart';
 
 import 'package:koalabag/model.dart';
-import 'package:koalabag/redux/actions.dart' as act;
-import 'package:koalabag/redux/app/state.dart';
-
-// Custom Client
-class WallaClient extends http.BaseClient {
-  final http.Client _inner;
-  Store<AppState> _store;
-
-  WallaClient({@required http.Client client, Store<AppState> store})
-      : _inner = client,
-        _store = store,
-        super();
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    final tok = _store.state.auth?.accessToken;
-
-    request.headers['Authorization'] = 'Bearer $tok';
-
-    final resp = _inner.send(request);
-
-    final ret = resp.then((resp) {
-      if (resp.statusCode == 401) {
-        _store.dispatch(act.AuthRefresh());
-      }
-
-      return resp;
-    });
-    return ret;
-  }
-
-  set store(Store<AppState> store) {
-    _store = store;
-  }
-}
 
 class Global {
   static final Global _singleton = new Global._internal();
@@ -61,7 +24,7 @@ class Global {
     _dao = dao;
   }
 
-  get dao {
+  Dao get dao {
     return _dao;
   }
 
@@ -69,13 +32,13 @@ class Global {
 }
 
 class Dao {
-  AuthDao authDao;
-  AbstractEntryDao entryDao;
+  IAuthDao authDao;
+  IEntryDao entryDao;
 
   Dao({this.authDao, this.entryDao});
 }
 
-abstract class AuthDao {
+abstract class IAuthDao {
   Future<Auth> login(Uri uri,
       {@required String clientId, @required String clientSecret});
 
@@ -86,21 +49,16 @@ abstract class AuthDao {
   Future<bool> logout();
 }
 
-abstract class AbstractEntryDao {
-  Future<BuiltList<Entry>> loadEntries();
+abstract class IEntryDao {
+  Future<BuiltList<EntryInfo>> getAll();
 
-  Future<bool> mergeSaveEntries(BuiltList<Entry> entries);
+  Future<EntryInfo> getOne(final int id);
 
-  Stream<BuiltList<Entry>> fetchEntries(Auth auth);
+  Future<EntryInfo> add(Uri uri);
 
-  Future<Entry> loadEntryById(final int id);
+  Future<EntryInfo> changeEntry(EntryInfo ei, {bool starred, bool archived});
 
-  Future<Entry> add(Auth auth, Uri uri);
+  Future<Entry> hydrate(EntryInfo ei);
 
-  Future<Entry> changeEntry(Auth auth, Entry entry,
-      {bool starred, bool archived});
-
-  Future<Entry> updateEntry(Entry entry);
-
-  Future<void> sync(Auth auth);
+  Future<void> sync();
 }

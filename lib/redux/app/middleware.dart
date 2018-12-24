@@ -5,7 +5,7 @@ import 'package:koalabag/redux/app/state.dart';
 import 'package:redux/redux.dart';
 
 class AuthMiddleware extends MiddlewareClass<AppState> {
-  final AuthDao _dao;
+  final IAuthDao _dao;
 
   AuthMiddleware(this._dao);
 

@@ -65,7 +65,7 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
 
   factory Entry([updates(EntryBuilder b)]) = _$Entry;
 
-  static Entry fromJson(Map<String, dynamic> map) {
+  factory Entry.fromJson(Map<String, dynamic> map) {
     return serializers.deserializeWith(Entry.serializer, map);
   }
 
@@ -77,8 +77,29 @@ abstract class Entry implements Built<Entry, EntryBuilder> {
     return serializers.serializeWith(serializer, this);
   }
 
-  static Entry fromMap(Map<String, dynamic> map) {
+  factory Entry.fromMap(Map<String, dynamic> map) {
     return serializers.deserializeWith(Entry.serializer, map);
+  }
+
+  factory Entry.unSplit(EntryInfo ei, EntryContent ec) {
+    return Entry((b) => b
+      ..content = ec.content
+      ..createdAt = ei.createdAt
+      ..domainName = ei.domainName
+      ..id = ei.id
+      ..isArchived = ei.isArchived
+      ..isStarred = ei.isStarred
+      ..language = ei.language
+      ..mimetype = ei.mimetype
+      ..previewPicture = ei.previewPicture
+      ..readingTime = ei.readingTime
+      ..tags.replace(ei.tags)
+      ..title = ei.title
+      ..updatedAt = ei.updatedAt
+      ..url = ei.url
+      ..userEmail = ei.userEmail
+      ..userId = ei.userId
+      ..userName = ei.userName);
   }
 
   bool starred() {

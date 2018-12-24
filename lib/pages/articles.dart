@@ -15,13 +15,13 @@ class Articles extends StatefulWidget {
 }
 
 class ArticleState extends State<Articles> {
-  final int Function(Entry, Entry) sortOld =
+  final int Function(EntryInfo, EntryInfo) sortOld =
       (a, b) => a.createdAt.compareTo(b.createdAt);
 
-  final int Function(Entry, Entry) sortRecent =
+  final int Function(EntryInfo, EntryInfo) sortRecent =
       (a, b) => b.createdAt.compareTo(a.createdAt);
 
-  int Function(Entry, Entry) currentSort;
+  int Function(EntryInfo, EntryInfo) currentSort;
 
   ArticleState() {
     currentSort = sortRecent;
@@ -67,15 +67,12 @@ class ArticleState extends State<Articles> {
                   return FloatingActionButton(
                       child: Icon(Icons.add), onPressed: callback);
                 },
-                onInit: (store) {
-                  store.dispatch(LoadEntries());
-                },
               );
             })));
   }
 
-  EntryList _list(
-      final String title, BuildContext context, bool Function(Entry) filter) {
+  EntryList _list(final String title, BuildContext context,
+      bool Function(EntryInfo) filter) {
     return EntryList(
       key: UniqueKey(),
       filter: filter,

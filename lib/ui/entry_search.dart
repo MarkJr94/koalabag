@@ -36,10 +36,10 @@ class EntrySearch extends StatelessWidget {
 }
 
 class _ViewModel {
-  BuiltList<Entry> entries;
+  BuiltList<EntryInfo> entries;
   final String query;
 
-  _ViewModel(BuiltList<Entry> entries, this.query) {
+  _ViewModel(BuiltList<EntryInfo> entries, this.query) {
     this.entries = BuiltList.of(entries.where((e) {
       return e.title.toLowerCase().contains(query.toLowerCase());
     }));

@@ -4,11 +4,11 @@ import 'package:koalabag/redux/app/state.dart';
 
 import 'package:redux/redux.dart';
 
-List<Middleware<AppState>> createEntryMiddle(AbstractEntryDao dao) {
+List<Middleware<AppState>> createEntryMiddle(IEntryDao dao) {
   final load = _load(dao);
   final fail = _entryFail(dao);
   final changeOne = _changeOne(dao);
-  final updateOne = _updateOne(dao);
+//  final updateOne = _updateOne(dao);
   final addOne = _addOne(dao);
   final sync = _sync(dao);
 
@@ -17,15 +17,15 @@ List<Middleware<AppState>> createEntryMiddle(AbstractEntryDao dao) {
     TypedMiddleware<AppState, LoadEntries>(load),
     TypedMiddleware<AppState, EntryFail>(fail),
     TypedMiddleware<AppState, ChangeEntry>(changeOne),
-    TypedMiddleware<AppState, UpdateEntry>(updateOne),
+//    TypedMiddleware<AppState, UpdateEntry>(updateOne),
     TypedMiddleware<AppState, AddEntry>(addOne),
   ];
 }
 
-Middleware<AppState> _load(AbstractEntryDao dao) {
+Middleware<AppState> _load(IEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     try {
-      var entries = await dao.loadEntries();
+      var entries = await dao.getAll();
       store.dispatch(LoadEntriesOk(entries));
     } catch (err) {
       store.dispatch(EntriesFail(err));
@@ -35,13 +35,13 @@ Middleware<AppState> _load(AbstractEntryDao dao) {
   };
 }
 
-Middleware<AppState> _sync(AbstractEntryDao dao) {
+Middleware<AppState> _sync(IEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is EntrySync);
     final EntrySync _act = action;
 
     try {
-      await dao.sync(store.state.auth);
+      await dao.sync();
       store.dispatch(LoadEntries());
       _act.completer.complete();
     } catch (err) {
@@ -53,17 +53,16 @@ Middleware<AppState> _sync(AbstractEntryDao dao) {
   };
 }
 
-Middleware<AppState> _changeOne(AbstractEntryDao dao) {
+Middleware<AppState> _changeOne(IEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is ChangeEntry);
     final ChangeEntry _act = action;
 
     try {
-      final changedEntry = await dao.changeEntry(store.state.auth, _act.entry,
+      final changedEntry = await dao.changeEntry(_act.entry,
           starred: _act.starred, archived: _act.archived);
 
       store.dispatch(ChangeEntryOk(changedEntry));
-      store.dispatch(UpdateEntry(entry: changedEntry));
     } catch (err, bt) {
       print("ChangeEntry error: $err");
       print("ChangeEntry backtrace: $bt");
@@ -74,21 +73,19 @@ Middleware<AppState> _changeOne(AbstractEntryDao dao) {
   };
 }
 
-Middleware<AppState> _addOne(AbstractEntryDao dao) {
+Middleware<AppState> _addOne(IEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) async {
     assert(action is AddEntry);
     final AddEntry _act = action;
 
     try {
       final newEntry = await dao.add(
-        store.state.auth,
         _act.uri,
       );
 
       print("AddEntry Got one $newEntry");
 
       store.dispatch(AddEntryOk(newEntry));
-      store.dispatch(UpdateEntry(entry: newEntry));
     } catch (err, bt) {
       print("AddEntry error: $err");
       print("AddEntry backtrace: $bt");
@@ -99,25 +96,7 @@ Middleware<AppState> _addOne(AbstractEntryDao dao) {
   };
 }
 
-Middleware<AppState> _updateOne(AbstractEntryDao dao) {
-  return (Store<AppState> store, dynamic action, NextDispatcher next) async {
-    assert(action is UpdateEntry);
-    final UpdateEntry _act = action;
-
-    try {
-      final changedEntry = await dao.updateEntry(_act.entry);
-
-      store.dispatch(UpdateEntryOk(changedEntry));
-    } catch (err) {
-      print("UpdateEntry error: $err");
-      store.dispatch(EntryFail(err));
-    }
-
-    next(action);
-  };
-}
-
-Middleware<AppState> _entryFail(AbstractEntryDao dao) {
+Middleware<AppState> _entryFail(IEntryDao dao) {
   return (Store<AppState> store, dynamic action, NextDispatcher next) {
     assert(action is EntryFail);
     final EntryFail _act = action;

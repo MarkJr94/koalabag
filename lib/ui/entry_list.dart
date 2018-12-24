@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 
+import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/pages/article.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/entry.dart' as ent;
@@ -13,8 +14,8 @@ import 'package:koalabag/model.dart';
 import 'package:koalabag/ui.dart';
 
 class EntryList extends StatefulWidget {
-  final bool Function(Entry) filter;
-  final int Function(Entry, Entry) sort;
+  final bool Function(EntryInfo) filter;
+  final int Function(EntryInfo, EntryInfo) sort;
 
   EntryList({Key key, @required this.filter, @required this.sort})
       : super(key: key);
@@ -27,8 +28,8 @@ class EntryList extends StatefulWidget {
 
 class EntryListState extends State<EntryList>
     with AutomaticKeepAliveClientMixin<EntryList> {
-  final bool Function(Entry) filter;
-  final int Function(Entry, Entry) sort;
+  final bool Function(EntryInfo) filter;
+  final int Function(EntryInfo, EntryInfo) sort;
 
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
@@ -60,7 +61,8 @@ class EntryListState extends State<EntryList>
                       onStarClick: vm.onStar,
                       onDeleteClick: vm.noOp(context),
                       onCheckClick: vm.onCheck,
-                      onEntryTap: (e) {
+                      onEntryTap: (ei) {
+                        var e = Global().dao.entryDao.hydrate(ei);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -80,8 +82,8 @@ class EntryListState extends State<EntryList>
 class _ViewModel {
   final Store<AppState> store;
   final BuiltList<int> entryIds;
-  final bool Function(Entry) filter;
-  final int Function(Entry, Entry) sort;
+  final bool Function(EntryInfo) filter;
+  final int Function(EntryInfo, EntryInfo) sort;
 
   _ViewModel(
       {@required this.store,
@@ -90,7 +92,8 @@ class _ViewModel {
       @required this.sort});
 
   static _ViewModel Function(Store<AppState>) fromStore(
-      bool Function(Entry) filter, int Function(Entry, Entry) sort) {
+      bool Function(EntryInfo) filter,
+      int Function(EntryInfo, EntryInfo) sort) {
     return (Store<AppState> store) {
       final list = BuiltList.of(store.state.entry.entries
           .rebuild((b) => b..sort(sort))
@@ -111,19 +114,19 @@ class _ViewModel {
     store.dispatch(act.AuthRefresh());
   }
 
-  void onStar(int idx, Entry entry) {
+  void onStar(int idx, EntryInfo entry) {
     final action = act.ChangeEntry(
         entry: entry, starred: !entry.starred(), archived: entry.archived());
     store.dispatch(action);
   }
 
-  void onCheck(int idx, Entry entry) {
+  void onCheck(int idx, EntryInfo entry) {
     final action = act.ChangeEntry(
         entry: entry, archived: !entry.archived(), starred: entry.starred());
     store.dispatch(action);
   }
 
-  void Function(int, Entry) noOp(BuildContext context) {
+  void Function(int, EntryInfo) noOp(BuildContext context) {
     final noOp = (idx, entry) {
       Scaffold.of(context).showSnackBar(SnackBar(
         content: Text("Unimplemented!"),

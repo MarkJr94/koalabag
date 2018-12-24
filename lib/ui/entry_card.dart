@@ -5,14 +5,14 @@ import 'package:flutter_redux/flutter_redux.dart';
 import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/app/state.dart';
 
-typedef EntryCardCallback = void Function(int idx, Entry entry);
+typedef EntryCardCallback = void Function(int idx, EntryInfo entry);
 
 class EntryCard extends StatelessWidget {
   final int entryId;
   final EntryCardCallback onCheckClick;
   final EntryCardCallback onStarClick;
   final EntryCardCallback onDeleteClick;
-  final void Function(Entry) onEntryTap;
+  final void Function(EntryInfo) onEntryTap;
 
 //  Entry entry;
 
@@ -29,7 +29,7 @@ class EntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
 
-    return StoreConnector<AppState, Entry>(
+    return StoreConnector<AppState, EntryInfo>(
       distinct: true,
       converter: (store) =>
           store.state.entry.entries.firstWhere((e) => e.id == entryId),
@@ -50,7 +50,7 @@ class EntryCard extends StatelessWidget {
     );
   }
 
-  Widget _mainColumn(BuildContext context, Entry entry, TextTheme tt) {
+  Widget _mainColumn(BuildContext context, EntryInfo entry, TextTheme tt) {
     final tt = Theme.of(context).textTheme;
 
     var mainColumn = <Widget>[
@@ -92,7 +92,7 @@ class EntryCard extends StatelessWidget {
         entry);
   }
 
-  Widget _bottomBar(final Entry entry, final TextTheme tt) {
+  Widget _bottomBar(final EntryInfo entry, final TextTheme tt) {
     final fav = entry.starred() ? Icons.star : Icons.star_border;
     final check =
         entry.archived() ? Icons.check_circle : Icons.check_circle_outline;
@@ -136,7 +136,7 @@ class EntryCard extends StatelessWidget {
     );
   }
 
-  Widget _enableTap(Widget w, Entry entry) {
+  Widget _enableTap(Widget w, EntryInfo entry) {
     return GestureDetector(
       child: w,
       onTap: () => onEntryTap(entry),

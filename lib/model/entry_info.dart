@@ -2,6 +2,7 @@ import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 import 'package:built_collection/built_collection.dart';
 
+import 'package:koalabag/serializers.dart';
 import 'package:koalabag/model/tag.dart';
 
 part 'entry_info.g.dart';
@@ -58,6 +59,14 @@ abstract class EntryInfo implements Built<EntryInfo, EntryInfoBuilder> {
   EntryInfo._();
 
   factory EntryInfo([updates(EntryInfoBuilder b)]) = _$EntryInfo;
+
+  Map<String, dynamic> toMap() {
+    return serializers.serializeWith(EntryInfo.serializer, this);
+  }
+
+  static EntryInfo fromMap(Map<String, dynamic> map) {
+    return serializers.deserializeWith(EntryInfo.serializer, map);
+  }
 
   bool starred() {
     return isStarred != 0;

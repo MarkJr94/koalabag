@@ -10,6 +10,8 @@ part 'serializers.g.dart';
 @SerializersFor(const [
   Auth,
   Entry,
+  EntryContent,
+  EntryInfo,
   Tag,
 ])
 final Serializers serializers = (_$serializers.toBuilder()

@@ -1,153 +1,77 @@
-import 'dart:convert';
-
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
 
-import 'package:koalabag/consts.dart';
 import 'package:koalabag/model.dart';
-import 'package:koalabag/data/repository.dart';
+import 'package:koalabag/data/api.dart';
 import 'package:koalabag/data/database.dart';
+import 'package:koalabag/data/repository.dart';
 
-class EntryDao implements AbstractEntryDao {
-  final WallaClient _client;
-  final EntryProvider _provider;
+class EntryDao implements IEntryDao {
+  final IEntryApi _api;
+//  final EntryProvider _provider;
+  final EntryInfoProvider _infoProvider;
+  final EntryContentProvider _contentProvider;
 
-  EntryDao({@required WallaClient client, @required EntryProvider provider})
-      : _client = client,
-        _provider = provider;
+  EntryDao(
+      {@required IEntryApi api,
+      @required EntryInfoProvider infoProvider,
+      @required EntryContentProvider contentProvider})
+      : _api = api,
+        _infoProvider = infoProvider,
+        _contentProvider = contentProvider;
 
   @override
-  Future<Entry> add(Auth auth, Uri articleUri) async {
-    final parsed = Uri.parse(auth.origin);
-    final uri = Uri(
-        scheme: parsed.scheme,
-        host: parsed.host,
-        path: Consts.apiPath + '/entries.json');
-
-    final params = {
-      'url': articleUri.toString(),
-    };
-
-    print('addEntry uri =  $uri');
-    print('addEntry params =  $params');
-
-    final resp = await _client.post(uri, body: params);
-
-    if (resp.statusCode != 200) {
-      throw Exception(
-          "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
-    }
-
-    print('addEntry resp.body =  ${resp.body}');
-
-    final js = jsonDecode(resp.body);
-
-    return Entry.fromJson(js);
+  Future<EntryInfo> add(Uri articleUri) async {
+    final e = await _api.add(articleUri);
+    var info = e.toInfo();
+    await _infoProvider.insert(info);
+    await _contentProvider.insert(e.toContent());
+    return info;
   }
 
   @override
-  Future<Entry> loadEntryById(int id) {
-    return _provider.getEntry(id);
+  Future<EntryInfo> getOne(final int id) {
+    return _infoProvider.get(id);
   }
 
   @override
-  Stream<BuiltList<Entry>> fetchEntries(Auth auth, {int since = 0}) async* {
-    final parsed = Uri.parse(auth.origin);
-    final first = Uri(
-        scheme: parsed.scheme,
-        host: parsed.host,
-        path: Consts.apiPath + '/entries.json',
-        queryParameters: {'perPage': '100', 'since': '$since'});
-
-    var uri = first;
-
-    // Pagination
-    do {
-      final resp = await _client.get(uri);
-      if (resp.statusCode != 200) {
-        throw Exception(
-            "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
-      }
-      final js = jsonDecode(resp.body);
-
-      final jsonEntries = js['_embedded']['items'];
-      assert(jsonEntries is List);
-
-      yield BuiltList.of((jsonEntries as List).map((jEnt) {
-        return Entry.fromJson(jEnt);
-      }));
-
-      final nextObj = js['_links']['next'];
-      uri = null;
-
-      if (null != nextObj) {
-        final nextUri = Uri.parse(nextObj['href']);
-
-        if (null != nextUri) {
-          uri = Uri(
-              scheme: first.scheme,
-              host: first.host,
-              path: nextUri.path,
-              queryParameters: nextUri.queryParameters);
-        }
-      }
-    } while (null != uri);
+  Future<BuiltList<EntryInfo>> getAll() {
+    return _infoProvider.loadAll();
   }
 
   Future<bool> mergeSaveEntries(BuiltList<Entry> entries) async {
-    final rows = await _provider.saveAll(entries);
-    return rows != 0;
-  }
+    final infos = entries.map((e) => e.toInfo());
+    final contents = entries.map((e) => e.toContent());
 
-  Future<Entry> updateEntry(Entry entry) async {
-    final updated = await _provider.insert(entry);
-    return updated;
-  }
+    final r1 = await _infoProvider.saveAll(infos);
+    final r2 = await _contentProvider.saveAll(contents);
 
-  @override
-  Future<BuiltList<Entry>> loadEntries() {
-    return _provider.loadAll();
+    return r1 != 0 && r1 == r2;
   }
 
   @override
-  Future<Entry> changeEntry(Auth auth, Entry entry,
+  Future<EntryInfo> changeEntry(EntryInfo ei,
       {bool starred, bool archived}) async {
-    final parsed = Uri.parse(auth.origin);
-    final uri = Uri(
-        scheme: parsed.scheme,
-        host: parsed.host,
-        path: Consts.apiPath + '/entries/${entry.id}.json');
+    var entry = await hydrate(ei);
 
-    final params = {
-      'starred': _b2i(starred ?? entry.starred()).toString(),
-      'archive': _b2i(archived ?? entry.archived()).toString(),
-    };
+    var updated =
+        await _api.changeEntry(entry, starred: starred, archived: archived);
 
-    print('changeEntry uri =  $uri');
-    print('changeEntry params =  $params');
+    var info = updated.toInfo();
 
-    final resp = await _client.patch(uri, body: params);
+    await _infoProvider.insert(info);
+    await _contentProvider.insert(updated.toContent());
 
-    if (resp.statusCode != 200) {
-      throw Exception(
-          "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
-    }
-
-    print('changeEntry resp.body =  ${resp.body}');
-
-    final js = jsonDecode(resp.body);
-
-    return Entry.fromJson(js);
+    return info;
   }
 
-  Future<void> sync(final Auth auth) async {
+  Future<void> sync() async {
     print("sync starts");
 
-    final localIds = BuiltSet.of(await _provider.allIds());
-    final latest = await _provider.getLatest();
+    final localIds = BuiltSet.of(await _infoProvider.allIds());
+    final latest = await _infoProvider.getLatest();
 
-    final entryStream =
-        fetchEntries(auth, since: latest.millisecondsSinceEpoch);
+    final entryStream = _api.all(since: latest.millisecondsSinceEpoch);
 
     print("localIds = $localIds");
 
@@ -164,11 +88,15 @@ class EntryDao implements AbstractEntryDao {
     print("Removed ids = $removed");
 
     if (removed.isNotEmpty) {
-      await _provider.deleteMany(removed);
+      await _infoProvider.deleteMany(removed);
+      await _contentProvider.deleteMany(removed);
     }
 
     await mergeSaveEntries(remoteEntries);
   }
-}
 
-int _b2i(bool it) => it ? 1 : 0;
+  Future<Entry> hydrate(EntryInfo ei) async {
+    var content = await _contentProvider.get(ei.id);
+    return Entry.unSplit(ei, content);
+  }
+}

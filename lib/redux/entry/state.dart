@@ -1,7 +1,8 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
-import 'package:koalabag/model/entry.dart';
+
+import 'package:koalabag/model/entry_info.dart';
 
 part 'state.g.dart';
 
@@ -12,7 +13,7 @@ abstract class EntryState implements Built<EntryState, EntryStateBuilder> {
 
   bool get isFetching;
 
-  BuiltList<Entry> get entries;
+  BuiltList<EntryInfo> get entries;
 
   EntryState._();
 
