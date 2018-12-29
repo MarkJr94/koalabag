@@ -60,5 +60,7 @@ abstract class IEntryDao {
 
   Future<Entry> hydrate(EntryInfo ei);
 
+  Future<Entry> getHydrated(int id);
+
   Future<void> sync();
 }

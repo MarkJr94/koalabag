@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:redux/redux.dart';
 
-import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/pages/article.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/entry.dart' as ent;
@@ -62,11 +61,10 @@ class EntryListState extends State<EntryList>
                       onDeleteClick: vm.noOp(context),
                       onCheckClick: vm.onCheck,
                       onEntryTap: (ei) {
-                        var e = Global().dao.entryDao.hydrate(ei);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Article(e),
+                            builder: (context) => Article(ei.id),
                           ),
                         );
                       },

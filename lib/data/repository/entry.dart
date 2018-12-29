@@ -99,4 +99,11 @@ class EntryDao implements IEntryDao {
     var content = await _contentProvider.get(ei.id);
     return Entry.unSplit(ei, content);
   }
+
+  Future<Entry> getHydrated(int id) async {
+    final content = await _contentProvider.get(id);
+    final info = await _infoProvider.get(id);
+
+    return Entry.unSplit(info, content);
+  }
 }

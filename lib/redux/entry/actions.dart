@@ -37,7 +37,7 @@ class ChangeEntry extends EntryReq {
   bool archived;
   final EntryInfo entry;
 
-  ChangeEntry({@required this.starred, this.archived, this.entry});
+  ChangeEntry({@required this.starred, @required this.archived, this.entry});
 }
 
 class ChangeEntryOk {
