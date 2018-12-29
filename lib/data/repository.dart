@@ -64,3 +64,23 @@ abstract class IEntryDao {
 
   Future<void> sync();
 }
+
+abstract class ITagDao {
+  Future<BuiltList<Tag>> getAll();
+
+  Future<Tag> byId(final int id);
+
+  Future<Tag> byLabel(final String label);
+
+  Future<void> add(int entryId, final Tag tag);
+
+  Future<void> remove(int entryId, final Tag tag);
+
+  Future<BuiltList<Tag>> getEntryTags(int entryId);
+
+  Future<void> delete(final Tag tag);
+
+  Future<void> deleteMany(final BuiltList<Tag> tags);
+
+  Future<void> sync();
+}

@@ -2,16 +2,23 @@ library database;
 
 export 'package:koalabag/data/database/entry_content.dart';
 export 'package:koalabag/data/database/entry_info.dart';
+export 'package:koalabag/data/database/tag.dart';
 
 import 'package:sqflite/sqflite.dart';
 
 import 'package:koalabag/data/database/entry_info.dart';
 import 'package:koalabag/data/database/entry_content.dart';
+import 'package:koalabag/data/database/tag.dart';
+
+//const _tableTagMapping = 'tags_to_entries';
+//const _columnTagId = 'tag_id';
+//const _columnEntryId = 'entry_id';
 
 class Provider {
   Database db;
   EntryInfoProvider _infoProvider;
   EntryContentProvider _contentProvider;
+  TagProvider _tagProvider;
 
   Provider(this.db);
 
@@ -42,7 +49,20 @@ create table $tableEntryContent (
   id integer primary key,
   content text)
 ''');
+
+      await db.execute('''
+create table $tableTag (
+  id integer primary key,
+  label text,
+  slug text)
+''');
     });
+
+    await db.execute('''
+create table $tableTagMapping (
+  $columnEntryId int,
+  $columnTagId int)
+''');
 
     return Provider(db);
   }
@@ -59,5 +79,13 @@ create table $tableEntryContent (
       _contentProvider = EntryContentProvider(db);
     }
     return _contentProvider;
+  }
+
+  TagProvider get tagProvider {
+    if (null == _tagProvider) {
+      _tagProvider = TagProvider(db);
+    }
+
+    return _tagProvider;
   }
 }

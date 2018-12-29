@@ -2,6 +2,7 @@ library api;
 
 export 'package:koalabag/data/api/auth.dart';
 export 'package:koalabag/data/api/entry.dart';
+export 'package:koalabag/data/api/tag.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:http/http.dart' as http;
@@ -28,6 +29,16 @@ abstract class IEntryApi {
 abstract class IAuthApi {
   Future<Auth> login(Uri uri, {String clientId, String clientSecret});
   Future<Auth> refresh(Auth old);
+}
+
+abstract class ITagApi {
+  Future<BuiltList<Tag>> all();
+  Future<void> deleteById(int id);
+  Future<void> deleteByLabel(String label);
+  Future<void> deleteManyByLabel(BuiltList<String> labels);
+  Future<void> addToEntry(int entryId, BuiltList<String> labels);
+  Future<void> removeFromEntry(int entryId, int tagId);
+  Future<BuiltList<Tag>> allFromEntry(int entryId);
 }
 
 // Custom Client
