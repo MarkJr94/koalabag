@@ -45,7 +45,7 @@ class Article extends StatelessWidget {
                     final entry = (data as Entry);
                     final body = Container(
                       padding: EdgeInsets.all(8.0),
-                      child: _mainColumn(entry, tt),
+                      child: _mainColumn(entry, tt, vm),
                     );
                     return body;
                   })),
@@ -80,17 +80,17 @@ class Article extends StatelessWidget {
           IconButton(
               tooltip: "Decrease Text Size",
               icon: Icon(Icons.remove),
-              onPressed: null),
+              onPressed: vm.shrinkText),
           IconButton(
               tooltip: "Increase Text Size",
               icon: Icon(Icons.add),
-              onPressed: null),
+              onPressed: vm.growText),
         ],
       ),
     );
   }
 
-  Column _mainColumn(Entry entry, TextTheme tt) {
+  Column _mainColumn(Entry entry, TextTheme tt, _ViewModel vm) {
     final title = Text(
       entry.title,
       style: tt.title,
@@ -131,7 +131,7 @@ class Article extends StatelessWidget {
       Divider(),
       Html(
         data: entry.content,
-        defaultTextStyle: tt.body1.apply(fontSizeFactor: 1.5),
+        defaultTextStyle: tt.body1.apply(fontSizeFactor: vm.scaleFactor),
         onLinkTap: (link) async => await launch(link),
       )
     ].map((w) => wu.pad(w, insets));
@@ -146,13 +146,19 @@ class Article extends StatelessWidget {
 class _ViewModel {
   final EntryInfo entryInfo;
   final int id;
+  final double scaleFactor;
   final Store<AppState> store;
 
-  _ViewModel(this.id, this.entryInfo, this.store);
+  _ViewModel(this.id, this.entryInfo, this.scaleFactor, this.store);
 
   factory _ViewModel.fromStore(Store<AppState> store, int id) {
     final entryInfo = store.state.entry.entries.firstWhere((ei) => ei.id == id);
-    return _ViewModel(id, entryInfo, store);
+    return _ViewModel(
+      id,
+      entryInfo,
+      store.state.entry.textScaleFactor,
+      store,
+    );
   }
 
   void star() {
@@ -167,6 +173,14 @@ class _ViewModel {
         archived: !entryInfo.archived(),
         starred: entryInfo.starred(),
         entry: entryInfo));
+  }
+
+  void growText() {
+    store.dispatch(GrowText());
+  }
+
+  void shrinkText() {
+    store.dispatch(ShrinkText());
   }
 
   @override

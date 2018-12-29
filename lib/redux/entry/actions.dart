@@ -46,17 +46,9 @@ class ChangeEntryOk {
   ChangeEntryOk(this.entry);
 }
 
-//class UpdateEntry {
-//  final Entry entry;
-//
-//  UpdateEntry({@required this.entry});
-//}
-//
-//class UpdateEntryOk {
-//  final Entry entry;
-//
-//  UpdateEntryOk(this.entry);
-//}
+class GrowText {}
+
+class ShrinkText {}
 
 class AddEntry extends EntryReq {
   final Uri uri;

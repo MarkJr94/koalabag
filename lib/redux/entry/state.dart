@@ -13,6 +13,8 @@ abstract class EntryState implements Built<EntryState, EntryStateBuilder> {
 
   bool get isFetching;
 
+  double get textScaleFactor;
+
   BuiltList<EntryInfo> get entries;
 
   EntryState._();
@@ -21,7 +23,10 @@ abstract class EntryState implements Built<EntryState, EntryStateBuilder> {
 
   factory EntryState.empty() {
     return _$EntryState._(
-        isFetching: false, isLoading: false, entries: BuiltList());
+        isFetching: false,
+        isLoading: false,
+        textScaleFactor: 1.0,
+        entries: BuiltList());
   }
 
   @override
@@ -29,6 +34,7 @@ abstract class EntryState implements Built<EntryState, EntryStateBuilder> {
     return (newBuiltValueToStringHelper('EntryState')
           ..add('isLoading', isLoading)
           ..add('isFetching', isFetching)
+          ..add('textScaleFactor', textScaleFactor)
           ..add('entries', "<${entries.length} items>"))
         .toString();
   }

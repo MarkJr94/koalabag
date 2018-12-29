@@ -8,7 +8,6 @@ List<Middleware<AppState>> createEntryMiddle(IEntryDao dao) {
   final load = _load(dao);
   final fail = _entryFail(dao);
   final changeOne = _changeOne(dao);
-//  final updateOne = _updateOne(dao);
   final addOne = _addOne(dao);
   final sync = _sync(dao);
 
@@ -17,7 +16,6 @@ List<Middleware<AppState>> createEntryMiddle(IEntryDao dao) {
     TypedMiddleware<AppState, LoadEntries>(load),
     TypedMiddleware<AppState, EntryFail>(fail),
     TypedMiddleware<AppState, ChangeEntry>(changeOne),
-//    TypedMiddleware<AppState, UpdateEntry>(updateOne),
     TypedMiddleware<AppState, AddEntry>(addOne),
   ];
 }

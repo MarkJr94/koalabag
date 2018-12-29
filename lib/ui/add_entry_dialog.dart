@@ -53,7 +53,7 @@ class AddEntryDialogState extends State<AddEntryDialog> {
 
     return Scaffold(
         appBar: AppBar(
-          title: const Text('New entry'),
+          title: const Text('Add Article'),
           actions: [
             FlatButton(
                 onPressed: () {

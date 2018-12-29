@@ -12,6 +12,8 @@ Reducer<EntryState> entryReducer = combineReducers([
   TypedReducer<EntryState, EntrySync>(_onSync),
   TypedReducer<EntryState, EntrySyncOk>(_onSyncOk),
   TypedReducer<EntryState, EntryFail>(_onFail),
+  TypedReducer<EntryState, GrowText>(_onGrow),
+  TypedReducer<EntryState, ShrinkText>(_onShrink),
 ]);
 
 EntryState _onLoad(EntryState entry, LoadEntries act) {
@@ -70,4 +72,16 @@ EntryState _onAddOk(EntryState entryS, AddEntryOk action) {
     ..isFetching = false
     ..isLoading = false
     ..entries.insert(0, action.entry));
+}
+
+const _scaleIncr = .2;
+
+EntryState _onGrow(EntryState entryS, GrowText action) {
+  return entryS
+      .rebuild((b) => b..textScaleFactor = b.textScaleFactor + _scaleIncr);
+}
+
+EntryState _onShrink(EntryState entryS, ShrinkText action) {
+  return entryS
+      .rebuild((b) => b..textScaleFactor = b.textScaleFactor - _scaleIncr);
 }
