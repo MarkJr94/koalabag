@@ -7,22 +7,31 @@ import 'package:koalabag/data/database.dart';
 import 'package:koalabag/data/repository.dart';
 
 class EntryDao implements IEntryDao {
-  final IEntryApi _api;
-//  final EntryProvider _provider;
+  final ITagApi _tagApi;
+  final IEntryApi _entryApi;
+
   final EntryInfoProvider _infoProvider;
   final EntryContentProvider _contentProvider;
+  final TagProvider _tagProvider;
+  final TagToEntryProvider _tagToEntryProvider;
 
   EntryDao(
       {@required IEntryApi api,
+      @required ITagApi tagApi,
       @required EntryInfoProvider infoProvider,
-      @required EntryContentProvider contentProvider})
-      : _api = api,
+      @required EntryContentProvider contentProvider,
+      @required TagProvider tagProvider,
+      @required TagToEntryProvider tagToEntryProvider})
+      : _entryApi = api,
+        _tagApi = tagApi,
         _infoProvider = infoProvider,
-        _contentProvider = contentProvider;
+        _contentProvider = contentProvider,
+        _tagProvider = tagProvider,
+        _tagToEntryProvider = tagToEntryProvider;
 
   @override
   Future<EntryInfo> add(Uri articleUri) async {
-    final e = await _api.add(articleUri);
+    final e = await _entryApi.add(articleUri);
     var info = e.toInfo();
     await _infoProvider.insert(info);
     await _contentProvider.insert(e.toContent());
@@ -54,8 +63,8 @@ class EntryDao implements IEntryDao {
       {bool starred, bool archived}) async {
     var entry = await hydrate(ei);
 
-    var updated =
-        await _api.changeEntry(entry, starred: starred, archived: archived);
+    var updated = await _entryApi.changeEntry(entry,
+        starred: starred, archived: archived);
 
     var info = updated.toInfo();
 
@@ -69,9 +78,10 @@ class EntryDao implements IEntryDao {
     print("sync starts");
 
     final localIds = BuiltSet.of(await _infoProvider.allIds());
+    final localTagIds = BuiltSet.of(await _tagProvider.allIds());
     final latest = await _infoProvider.getLatest();
 
-    final entryStream = _api.all(since: latest.millisecondsSinceEpoch);
+    final entryStream = _entryApi.all(since: latest.millisecondsSinceEpoch);
 
     print("localIds = $localIds");
 
@@ -82,6 +92,9 @@ class EntryDao implements IEntryDao {
 
     final remoteIds = BuiltSet.of(remoteEntries.map((e) => e.id));
 
+    final remoteTags = await _tagApi.all();
+    final remoteTagIds = BuiltSet.of(remoteTags.map((tag) => tag.id));
+
     final removed =
         BuiltList.of(localIds.where((id) => !remoteIds.contains(id)));
 
@@ -91,6 +104,23 @@ class EntryDao implements IEntryDao {
       await _infoProvider.deleteMany(removed);
       await _contentProvider.deleteMany(removed);
     }
+
+    // Do Tags
+    final removedTags =
+        BuiltList.of(localTagIds.where((id) => !remoteTagIds.contains(id)));
+
+    if (removedTags.isNotEmpty) {
+      await _tagProvider.deleteMany(removedTags);
+    }
+
+    final mappings = remoteEntries
+        .map((e) => e.tags.map((tag) => TagToEntry((b) => b
+          ..entryId = e.id
+          ..tagId = tag.id)))
+        .expand((tte) => tte);
+
+    await _tagProvider.insertMany(remoteTags);
+    await _tagToEntryProvider.insertMany(mappings);
 
     await mergeSaveEntries(remoteEntries);
   }

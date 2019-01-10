@@ -35,8 +35,8 @@ abstract class ITagApi {
   Future<BuiltList<Tag>> all();
   Future<void> deleteById(int id);
   Future<void> deleteByLabel(String label);
-  Future<void> deleteManyByLabel(BuiltList<String> labels);
-  Future<void> addToEntry(int entryId, BuiltList<String> labels);
+  Future<void> deleteManyByLabel(Iterable<String> labels);
+  Future<BuiltList<Tag>> addToEntry(int entryId, Iterable<String> labels);
   Future<void> removeFromEntry(int entryId, int tagId);
   Future<BuiltList<Tag>> allFromEntry(int entryId);
 }

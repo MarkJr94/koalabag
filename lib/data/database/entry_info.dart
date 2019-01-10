@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:koalabag/model/entry_info.dart';
 
 const tableEntryInfo = "entry_info";
-const columnId = "id";
+const _columnId = "id";
 
 class EntryInfoProvider {
   Database db;
@@ -22,7 +22,7 @@ class EntryInfoProvider {
 
   Future<EntryInfo> get(int id) async {
     List<Map> maps = await db.query(tableEntryInfo,
-        columns: null, where: "$columnId = ?", whereArgs: [id]);
+        columns: null, where: "$_columnId = ?", whereArgs: [id]);
     if (maps.length > 0) {
       return EntryInfo.fromMap(maps.first);
     }
@@ -31,7 +31,7 @@ class EntryInfoProvider {
 
   Future<int> delete(int id) async {
     return await db
-        .delete(tableEntryInfo, where: "$columnId = ?", whereArgs: [id]);
+        .delete(tableEntryInfo, where: "$_columnId = ?", whereArgs: [id]);
   }
 
   Future<int> update(EntryInfo ei) async {
@@ -39,7 +39,7 @@ class EntryInfoProvider {
     map.remove('tags');
 
     return await db.update(tableEntryInfo, map,
-        where: "$columnId = ?", whereArgs: [ei.id]);
+        where: "$_columnId = ?", whereArgs: [ei.id]);
   }
 
   Future<int> saveAll(Iterable<EntryInfo> eis) async {
@@ -66,17 +66,16 @@ class EntryInfoProvider {
   }
 
   Future<int> deleteMany(Iterable<int> ids) async {
-    final inList = ids.join(', ');
     final inParams = ids.map((_) => '?').join(',');
 
     return await db.delete(tableEntryInfo,
-        where: "$columnId IN ($inParams)", whereArgs: [inList]);
+        where: "$_columnId IN ($inParams)", whereArgs: ids.toList());
   }
 
   Future<BuiltList<int>> allIds() async {
     final rows = await db.query(tableEntryInfo,
-        columns: [columnId], orderBy: 'created_at DESC');
-    return BuiltList.of(rows.map((row) => row[columnId]));
+        columns: [_columnId], orderBy: 'created_at DESC');
+    return BuiltList.of(rows.map((row) => row[_columnId]));
   }
 
   Future<DateTime> getLatest() async {

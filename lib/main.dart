@@ -20,16 +20,25 @@ void main() async {
   final client = WallaClient(http.Client());
 
   final provider = await Provider.open(dbPath, version: dbVersion);
+
+  var tagApi = TagApi(client);
+  final tagProvider = provider.tagProvider;
+  final tagToEntryProvider = provider.tagToEntryProvider;
+  final tagDao = TagDao(tagApi, tagProvider, tagToEntryProvider);
+
   final entryInfoProvider = provider.entryInfoProvider;
   final entryContentProvider = provider.entryContentProvider;
   final entryDao = EntryDao(
       api: EntryApi(client),
+      tagApi: tagApi,
       infoProvider: entryInfoProvider,
-      contentProvider: entryContentProvider);
+      contentProvider: entryContentProvider,
+      tagProvider: tagProvider,
+      tagToEntryProvider: tagToEntryProvider);
   print('entryDao = $entryDao');
 
   final authDao = AuthDao(AuthApi());
-  final dao = Dao(authDao: authDao, entryDao: entryDao);
+  final dao = Dao(authDao: authDao, entryDao: entryDao, tagDao: tagDao);
 
   Global().init(dao);
 

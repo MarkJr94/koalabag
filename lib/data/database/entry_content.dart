@@ -64,11 +64,10 @@ class EntryContentProvider {
   }
 
   Future<int> deleteMany(Iterable<int> ids) async {
-    final inList = ids.join(', ');
     final inParams = ids.map((_) => '?').join(',');
 
     return await db.delete(tableEntryContent,
-        where: "$_columnId IN ($inParams)", whereArgs: [inList]);
+        where: "$_columnId IN ($inParams)", whereArgs: ids.toList());
   }
 
   Future<BuiltList<int>> allIds() async {

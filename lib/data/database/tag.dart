@@ -2,26 +2,36 @@ import 'package:built_collection/built_collection.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:koalabag/model/tag.dart';
+import 'package:koalabag/data/database/tag_to_entry.dart';
 
 const tableTag = "tags";
 const _columnId = "id";
-
-const tableTagMapping = 'tags_to_entries';
-const columnTagId = 'tag_id';
-const columnEntryId = 'entry_id';
+const _columnLabel = "label";
 
 class TagProvider {
   Database db;
 
   TagProvider(this.db);
 
-  Future<Tag> insert(Tag ei) async {
-    var map = ei.toMap();
-    map.remove('tags');
+  Future<void> insert(Tag tag) async {
+    var map = tag.toMap();
 
     await db.insert(tableTag, map,
         conflictAlgorithm: ConflictAlgorithm.replace);
-    return ei;
+  }
+
+  Future<int> insertMany(Iterable<Tag> tags) async {
+    return await db.transaction((tx) {
+      final db = tx.batch();
+
+      for (final tag in tags) {
+        var map = tag.toMap();
+
+        db.insert(tableTag, map, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+
+      db.commit(noResult: true);
+    });
   }
 
   Future<Tag> get(int id) async {
@@ -34,59 +44,53 @@ class TagProvider {
   }
 
   Future<BuiltList<Tag>> getMany(Iterable<int> ids) async {
-    final inList = ids.join(', ');
     final inParams = ids.map((_) => '?').join(',');
 
     List<Map<String, dynamic>> maps = await db.query(tableTag,
-        columns: null, where: "$_columnId IN ($inParams)", whereArgs: [inList]);
+        columns: null,
+        where: "$_columnId IN ($inParams)",
+        whereArgs: ids.toList());
     return BuiltList.of(maps.map(Tag.fromMap));
+  }
+
+  Future<Tag> getByLabel(String label) async {
+    List<Map> maps = await db.query(tableTag,
+        columns: null,
+        where: "$_columnLabel = ?",
+        whereArgs: [label],
+        limit: 1);
+    if (maps.length > 0) {
+      return Tag.fromMap(maps.first);
+    }
+    return null;
   }
 
   Future<int> delete(int id) async {
     return await db.delete(tableTag, where: "$_columnId = ?", whereArgs: [id]);
   }
 
-  Future<int> update(Tag ei) async {
-    var map = ei.toMap();
-    map.remove('tags');
+  Future<int> deleteMany(Iterable<int> ids) async {
+    final inParams = ids.map((_) => '?').join(',');
 
-    return await db
-        .update(tableTag, map, where: "$_columnId = ?", whereArgs: [ei.id]);
+    return await db.delete(tableTag,
+        where: "$_columnId IN ($inParams)", whereArgs: ids.toList());
   }
 
-  Future<int> saveAll(Iterable<Tag> eis) async {
-    return await db.transaction((tx) {
-      final db = tx.batch();
+  Future<int> update(Tag tag) async {
+    var map = tag.toMap();
 
-      for (final ei in eis) {
-        var map = ei.toMap();
-        map.remove('tags');
-
-        db.insert(tableTag, map, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
-
-      db.commit(noResult: true);
-    });
+    return await db
+        .update(tableTag, map, where: "$_columnId = ?", whereArgs: [tag.id]);
   }
 
   Future<BuiltList<Tag>> loadAll() async {
-    final maps =
-        await db.query(tableTag, columns: null, orderBy: 'created_at DESC');
+    final maps = await db.query(tableTag, columns: null);
 
     return BuiltList.of(maps.map(Tag.fromMap));
   }
 
-  Future<int> deleteMany(Iterable<int> ids) async {
-    final inList = ids.join(', ');
-    final inParams = ids.map((_) => '?').join(',');
-
-    return await db.delete(tableTag,
-        where: "$_columnId IN ($inParams)", whereArgs: [inList]);
-  }
-
   Future<BuiltList<int>> allIds() async {
-    final rows = await db.query(tableTag,
-        columns: [_columnId], orderBy: 'created_at DESC');
+    final rows = await db.query(tableTag, columns: [_columnId]);
     return BuiltList.of(rows.map((row) => row[_columnId]));
   }
 
@@ -105,7 +109,7 @@ class TagProvider {
   }
 
   Future<int> removeFromEntry(int entryId, int tagId) async {
-    return await db.delete(tableTag,
+    return await db.delete(tableTagMapping,
         where: "$columnTagId = ? AND $columnEntryId = ?",
         whereArgs: [tagId, entryId]);
   }

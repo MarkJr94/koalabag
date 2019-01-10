@@ -41,7 +41,6 @@ class Article extends StatelessWidget {
                         child: Text(":( $e :("),
                       ),
                   renderSuccess: ({data}) {
-//                print("data = $data");
                     final entry = (data as Entry);
                     final body = Container(
                       padding: EdgeInsets.all(8.0),

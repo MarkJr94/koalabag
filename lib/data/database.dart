@@ -3,22 +3,21 @@ library database;
 export 'package:koalabag/data/database/entry_content.dart';
 export 'package:koalabag/data/database/entry_info.dart';
 export 'package:koalabag/data/database/tag.dart';
+export 'package:koalabag/data/database/tag_to_entry.dart';
 
 import 'package:sqflite/sqflite.dart';
 
 import 'package:koalabag/data/database/entry_info.dart';
 import 'package:koalabag/data/database/entry_content.dart';
 import 'package:koalabag/data/database/tag.dart';
-
-//const _tableTagMapping = 'tags_to_entries';
-//const _columnTagId = 'tag_id';
-//const _columnEntryId = 'entry_id';
+import 'package:koalabag/data/database/tag_to_entry.dart';
 
 class Provider {
   Database db;
   EntryInfoProvider _infoProvider;
   EntryContentProvider _contentProvider;
   TagProvider _tagProvider;
+  TagToEntryProvider _tagToEntryProvider;
 
   Provider(this.db);
 
@@ -26,43 +25,51 @@ class Provider {
     final db = await openDatabase(path, version: version,
         onCreate: (db, version) async {
       await db.execute('''
-create table $tableEntryInfo (
-  id integer primary key,
-  created_at text ,
-  domain_name text ,
-  is_archived integer not null,
-  is_starred integer not null,
-  language text,
-  mimetype text,
-  preview_picture text,
-  reading_time integer not null,
-  title text not null,
-  updated_at text,
-  url text not null,
-  user_email text,
-  user_id integer not null,
-  user_name text)
+CREATE table $tableEntryInfo (
+  id INTEGER PRIMARY KEY,
+  created_at TEXT ,
+  domain_name TEXT ,
+  is_archived INTEGER NOT NULL,
+  is_starred INTEGER NOT NULL,
+  language TEXT,
+  mimetype TEXT,
+  preview_picture TEXT,
+  reading_time INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  updated_at TEXT,
+  url TEXT NOT NULL,
+  user_email TEXT,
+  user_id INTEGER NOT NULL,
+  user_name TEXT)
 ''');
 
       await db.execute('''
-create table $tableEntryContent (
-  id integer primary key,
-  content text)
+CREATE table $tableEntryContent (
+  id INTEGER PRIMARY KEY,
+  content TEXT)
 ''');
 
       await db.execute('''
-create table $tableTag (
-  id integer primary key,
-  label text,
-  slug text)
+CREATE table $tableTag (
+  id INTEGER PRIMARY KEY,
+  label TEXT,
+  slug TEXT)
+''');
+
+      await db.execute('''
+CREATE table $tableTagMapping (
+  $columnEntryId int,
+  $columnTagId int,
+  FOREIGN KEY ($columnEntryId)
+    REFERENCES $tableEntryInfo(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY ($columnTagId)
+    REFERENCES $tableTag(id)
+    ON DELETE CASCADE,
+  UNIQUE($columnEntryId, $columnTagId) ON CONFLICT REPLACE
+)
 ''');
     });
-
-    await db.execute('''
-create table $tableTagMapping (
-  $columnEntryId int,
-  $columnTagId int)
-''');
 
     return Provider(db);
   }
@@ -87,5 +94,13 @@ create table $tableTagMapping (
     }
 
     return _tagProvider;
+  }
+
+  TagToEntryProvider get tagToEntryProvider {
+    if (null == _tagToEntryProvider) {
+      _tagToEntryProvider = TagToEntryProvider(db);
+    }
+
+    return _tagToEntryProvider;
   }
 }

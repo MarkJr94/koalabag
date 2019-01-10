@@ -58,7 +58,7 @@ class TagApi implements ITagApi {
   }
 
   @override
-  Future<void> deleteManyByLabel(BuiltList<String> labels) async {
+  Future<void> deleteManyByLabel(Iterable<String> labels) async {
     final uri =
         Uri.parse(_client.baseUrl + Consts.apiPath + '/tags/label.json');
     final tagsStr = labels.join(',');
@@ -77,7 +77,8 @@ class TagApi implements ITagApi {
   }
 
   @override
-  Future<void> addToEntry(int entryId, BuiltList<String> labels) async {
+  Future<BuiltList<Tag>> addToEntry(
+      int entryId, Iterable<String> labels) async {
     final url = Uri.parse(
         _client.baseUrl + Consts.apiPath + '/entries/$entryId/tags.json');
     final resp =
@@ -88,7 +89,12 @@ class TagApi implements ITagApi {
           "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
     }
 
-    return null;
+    final js = jsonDecode(resp.body);
+    assert(js is List);
+    final jsonTags = js as List;
+
+    final tags = BuiltList.of(jsonTags.map((jsonTag) => Tag.fromMap(jsonTag)));
+    return tags;
   }
 
   @override

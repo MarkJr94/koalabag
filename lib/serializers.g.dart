@@ -25,6 +25,7 @@ Serializers _$serializers = (new Serializers().toBuilder()
       ..add(EntryContent.serializer)
       ..add(EntryInfo.serializer)
       ..add(Tag.serializer)
+      ..add(TagToEntry.serializer)
       ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(Tag)]),
           () => new ListBuilder<Tag>())

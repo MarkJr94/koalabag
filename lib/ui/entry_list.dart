@@ -21,11 +21,11 @@ class EntryList extends StatefulWidget {
 
   @override
   State createState() {
-    return EntryListState(filter: filter, sort: sort);
+    return _State(filter: filter, sort: sort);
   }
 }
 
-class EntryListState extends State<EntryList>
+class _State extends State<EntryList>
     with AutomaticKeepAliveClientMixin<EntryList> {
   final bool Function(EntryInfo) filter;
   final int Function(EntryInfo, EntryInfo) sort;
@@ -33,7 +33,7 @@ class EntryListState extends State<EntryList>
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       new GlobalKey<RefreshIndicatorState>();
 
-  EntryListState({@required this.filter, @required this.sort});
+  _State({@required this.filter, @required this.sort});
 
   @override
   bool get wantKeepAlive => true;

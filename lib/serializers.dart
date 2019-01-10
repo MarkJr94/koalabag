@@ -13,6 +13,7 @@ part 'serializers.g.dart';
   EntryContent,
   EntryInfo,
   Tag,
+  TagToEntry,
 ])
 final Serializers serializers = (_$serializers.toBuilder()
       ..addPlugin(StandardJsonPlugin())

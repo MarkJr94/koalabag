@@ -1,7 +1,8 @@
 library repository;
 
-export 'package:koalabag/data/repository/entry.dart';
 export 'package:koalabag/data/repository/auth.dart';
+export 'package:koalabag/data/repository/entry.dart';
+export 'package:koalabag/data/repository/tag.dart';
 
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter/material.dart';
@@ -34,8 +35,21 @@ class Global {
 class Dao {
   IAuthDao authDao;
   IEntryDao entryDao;
+  ITagDao tagDao;
 
-  Dao({this.authDao, this.entryDao});
+  Dao({this.authDao, this.entryDao, this.tagDao});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Dao &&
+          runtimeType == other.runtimeType &&
+          identical(authDao, other.authDao) &&
+          identical(entryDao, other.entryDao) &&
+          identical(tagDao, other.tagDao);
+
+  @override
+  int get hashCode => authDao.hashCode ^ entryDao.hashCode ^ tagDao.hashCode;
 }
 
 abstract class IAuthDao {
@@ -72,7 +86,9 @@ abstract class ITagDao {
 
   Future<Tag> byLabel(final String label);
 
-  Future<void> add(int entryId, final Tag tag);
+  Future<void> add(int entryId, final String label);
+
+  Future<BuiltList<Tag>> addMany(int entryId, final Iterable<String> labels);
 
   Future<void> remove(int entryId, final Tag tag);
 
@@ -80,7 +96,5 @@ abstract class ITagDao {
 
   Future<void> delete(final Tag tag);
 
-  Future<void> deleteMany(final BuiltList<Tag> tags);
-
-  Future<void> sync();
+  Future<void> deleteMany(final Iterable<Tag> tags);
 }
