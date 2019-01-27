@@ -24,51 +24,12 @@ class Provider {
   static Future<Provider> open(String path, {version = 1}) async {
     final db = await openDatabase(path, version: version,
         onCreate: (db, version) async {
-      await db.execute('''
-CREATE table $tableEntryInfo (
-  id INTEGER PRIMARY KEY,
-  created_at TEXT ,
-  domain_name TEXT ,
-  is_archived INTEGER NOT NULL,
-  is_starred INTEGER NOT NULL,
-  language TEXT,
-  mimetype TEXT,
-  preview_picture TEXT,
-  reading_time INTEGER NOT NULL,
-  title TEXT NOT NULL,
-  updated_at TEXT,
-  url TEXT NOT NULL,
-  user_email TEXT,
-  user_id INTEGER NOT NULL,
-  user_name TEXT)
-''');
-
-      await db.execute('''
-CREATE table $tableEntryContent (
-  id INTEGER PRIMARY KEY,
-  content TEXT)
-''');
-
-      await db.execute('''
-CREATE table $tableTag (
-  id INTEGER PRIMARY KEY,
-  label TEXT,
-  slug TEXT)
-''');
-
-      await db.execute('''
-CREATE table $tableTagMapping (
-  $columnEntryId int,
-  $columnTagId int,
-  FOREIGN KEY ($columnEntryId)
-    REFERENCES $tableEntryInfo(id)
-    ON DELETE CASCADE,
-  FOREIGN KEY ($columnTagId)
-    REFERENCES $tableTag(id)
-    ON DELETE CASCADE,
-  UNIQUE($columnEntryId, $columnTagId) ON CONFLICT REPLACE
-)
-''');
+      await db.transaction((txn) async {
+        await txn.execute(_entryInfoDdl);
+        await txn.execute(_entryContentDdl);
+        await txn.execute(_tagDdl);
+        await txn.execute(_tagMappingDdl);
+      });
     });
 
     return Provider(db);
@@ -104,3 +65,48 @@ CREATE table $tableTagMapping (
     return _tagToEntryProvider;
   }
 }
+
+const _entryInfoDdl = '''
+CREATE table $tableEntryInfo (
+  id INTEGER PRIMARY KEY,
+  created_at TEXT ,
+  domain_name TEXT ,
+  is_archived INTEGER NOT NULL,
+  is_starred INTEGER NOT NULL,
+  language TEXT,
+  mimetype TEXT,
+  preview_picture TEXT,
+  reading_time INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  updated_at TEXT,
+  url TEXT NOT NULL,
+  user_email TEXT,
+  user_id INTEGER NOT NULL,
+  user_name TEXT)
+''';
+
+const _entryContentDdl = '''
+CREATE table $tableEntryContent (
+  id INTEGER PRIMARY KEY,
+  content TEXT)
+''';
+
+const _tagDdl = '''
+CREATE table $tableTag (
+  id INTEGER PRIMARY KEY,
+  label TEXT,
+  slug TEXT)
+''';
+
+const _tagMappingDdl = '''
+CREATE table $tableTagMapping (
+  $columnEntryId int,
+  $columnTagId int,
+  FOREIGN KEY ($columnEntryId)
+    REFERENCES $tableEntryInfo(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY ($columnTagId)
+    REFERENCES $tableTag(id)
+    ON DELETE CASCADE,
+  UNIQUE($columnEntryId, $columnTagId) ON CONFLICT REPLACE)
+''';

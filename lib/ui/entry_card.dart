@@ -2,29 +2,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
-import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/app/state.dart';
 import 'package:koalabag/widget_utils.dart' as w;
 
-typedef EntryCardCallback = void Function(int idx, EntryInfo entry);
-
 class EntryCard extends StatelessWidget {
   final int entryId;
-  final EntryCardCallback onCheckClick;
-  final EntryCardCallback onStarClick;
-  final EntryCardCallback onDeleteClick;
-  final void Function(EntryInfo) onEntryTap;
-
-//  Entry entry;
+  final EntryCardController controller;
 
   EntryCard({
     Key key,
     @required this.entryId,
-    @required this.onCheckClick,
-    @required this.onStarClick,
-    @required this.onDeleteClick,
-    @required this.onEntryTap,
+    @required this.controller,
   }) : super(key: key);
 
   @override
@@ -91,7 +80,7 @@ class EntryCard extends StatelessWidget {
         Column(
           children: mainColumn,
         ),
-        () => onEntryTap(entry));
+        () => controller.select(entry));
   }
 
   Widget _bottomBar(final EntryInfo entry, final TextTheme tt) {
@@ -118,22 +107,22 @@ class EntryCard extends StatelessWidget {
             children: <Widget>[
               IconButton(
                 icon: Icon(Icons.label),
-                onPressed: checkTags,
+                onPressed: () => controller.manageTags(entry),
                 tooltip: 'Tags',
               ),
               IconButton(
                 icon: Icon(check),
-                onPressed: () => onCheckClick(entryId, entry),
+                onPressed: () => controller.check(entry),
                 tooltip: 'Archive',
               ),
               IconButton(
                 icon: Icon(fav),
-                onPressed: () => onStarClick(entryId, entry),
+                onPressed: () => controller.star(entry),
                 tooltip: 'Favorite',
               ),
               IconButton(
                 icon: Icon(Icons.delete),
-                onPressed: () => onDeleteClick(entryId, entry),
+                onPressed: () => controller.delete(entry),
                 tooltip: 'Delete',
               ),
             ],
@@ -142,11 +131,12 @@ class EntryCard extends StatelessWidget {
       ],
     );
   }
+}
 
-  void checkTags() async {
-    final dao = Global().dao;
-
-    final entryTags = await dao.tagDao.getEntryTags(entryId);
-    print("got Tags = $entryTags");
-  }
+abstract class EntryCardController {
+  void check(EntryInfo entry);
+  void star(EntryInfo entry);
+  void delete(EntryInfo entry);
+  void select(EntryInfo entry);
+  void manageTags(EntryInfo entry);
 }

@@ -45,6 +45,8 @@ class _State extends State<EntryList>
         distinct: true,
         converter: _ViewModel.fromStore(filter, sort),
         builder: (BuildContext ctx, _ViewModel vm) {
+          final cardController = _CardController(vm.store, ctx);
+
           return RefreshIndicator(
               key: _refreshIndicatorKey,
               onRefresh: vm.sync,
@@ -57,17 +59,7 @@ class _State extends State<EntryList>
                     return EntryCard(
                       entryId: id,
                       key: ValueKey(id),
-                      onStarClick: vm.onStar,
-                      onDeleteClick: vm.noOp(context),
-                      onCheckClick: vm.onCheck,
-                      onEntryTap: (ei) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => Article(ei.id),
-                          ),
-                        );
-                      },
+                      controller: cardController,
                     );
                   }));
         },
@@ -112,30 +104,6 @@ class _ViewModel {
     store.dispatch(act.AuthRefresh());
   }
 
-  void onStar(int idx, EntryInfo entry) {
-    final action = act.ChangeEntry(
-        entry: entry, starred: !entry.starred(), archived: entry.archived());
-    store.dispatch(action);
-  }
-
-  void onCheck(int idx, EntryInfo entry) {
-    final action = act.ChangeEntry(
-        entry: entry, archived: !entry.archived(), starred: entry.starred());
-    store.dispatch(action);
-  }
-
-  void Function(int, EntryInfo) noOp(BuildContext context) {
-    final noOp = (idx, entry) {
-      Scaffold.of(context).showSnackBar(SnackBar(
-        content: Text("Unimplemented!"),
-        backgroundColor: Colors.deepPurple,
-        duration: Duration(milliseconds: 500),
-      ));
-    };
-
-    return noOp;
-  }
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -145,4 +113,44 @@ class _ViewModel {
 
   @override
   int get hashCode => entryIds.hashCode;
+}
+
+class _CardController implements EntryCardController {
+  final Store<AppState> store;
+  final BuildContext context;
+
+  _CardController(this.store, this.context);
+
+  void check(EntryInfo ei) {
+    final action = act.ChangeEntry(
+        entry: ei, archived: !ei.archived(), starred: ei.starred());
+    store.dispatch(action);
+  }
+
+  void star(EntryInfo ei) {
+    final action = act.ChangeEntry(
+        entry: ei, archived: ei.archived(), starred: !ei.starred());
+    store.dispatch(action);
+  }
+
+  void delete(EntryInfo ei) {
+    print("Delete unimplemented");
+  }
+
+  void select(EntryInfo ei) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Article(ei.id),
+      ),
+    );
+  }
+
+  void manageTags(EntryInfo ei) {
+    Navigator.of(context).push(MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (context) {
+          return TagDialog(ei);
+        }));
+  }
 }

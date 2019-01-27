@@ -20,10 +20,13 @@ class TagDao implements ITagDao {
 
   @override
   Future<Tag> add(int entryId, final String label) async {
-    final tag = (await _api.addToEntry(entryId, [label]))[0];
-    await _provider.insert(tag);
-    await _provider.addToEntry(entryId, tag.id);
-    return tag;
+    final tags = await _api.addToEntry(entryId, [label]);
+    await _provider.insertMany(tags);
+    //await _provider.addToEntry(entryId, tag.id);
+    await _tagToEntryProvider.insertMany(tags.map((t) => TagToEntry((b) => b
+      ..tagId = t.id
+      ..entryId = entryId)));
+    return tags.firstWhere((t) => t.label == label);
   }
 
   @override
@@ -40,7 +43,7 @@ class TagDao implements ITagDao {
   @override
   Future<void> remove(int entryId, final Tag tag) async {
     await _api.removeFromEntry(entryId, tag.id);
-    await _provider.delete(tag.id);
+    await _tagToEntryProvider.delete(entryId, tag.id);
   }
 
   Future<BuiltList<Tag>> getEntryTags(int entryId) async {

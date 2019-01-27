@@ -52,5 +52,11 @@ class TagToEntryProvider {
     return BuiltList.of(maps.map(TagToEntry.fromMap));
   }
 
+  Future<int> delete(int entryId, int tagId) async {
+    return await db.delete(tableTagMapping,
+        where: "$columnEntryId = ? AND $columnTagId = ?",
+        whereArgs: [entryId, tagId]);
+  }
+
   Future close() async => db.close();
 }

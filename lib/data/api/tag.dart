@@ -81,15 +81,17 @@ class TagApi implements ITagApi {
       int entryId, Iterable<String> labels) async {
     final url = Uri.parse(
         _client.baseUrl + Consts.apiPath + '/entries/$entryId/tags.json');
-    final resp =
-        await _client.post(url, body: jsonEncode({'tags': labels.join(',')}));
+    final resp = await _client.post(url, body: {'tags': labels.join(',')});
+    //await _client.post(url, body: jsonEncode({'tags': labels.join(',')}));
 
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       throw Exception(
           "Network Error: ${resp.statusCode}: ${resp.reasonPhrase}");
     }
 
-    final js = jsonDecode(resp.body);
+    // Return value is an entry
+    final js = jsonDecode(resp.body)['tags'];
+    print('js = $js');
     assert(js is List);
     final jsonTags = js as List;
 
