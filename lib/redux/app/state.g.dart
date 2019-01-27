@@ -78,6 +78,12 @@ class _$AppStateSerializer implements StructuredSerializer<AppState> {
         ..add(serializers.serialize(object.entry,
             specifiedType: const FullType(EntryState)));
     }
+    if (object.tag != null) {
+      result
+        ..add('tag')
+        ..add(serializers.serialize(object.tag,
+            specifiedType: const FullType(TagState)));
+    }
 
     return result;
   }
@@ -109,6 +115,10 @@ class _$AppStateSerializer implements StructuredSerializer<AppState> {
           result.entry.replace(serializers.deserialize(value,
               specifiedType: const FullType(EntryState)) as EntryState);
           break;
+        case 'tag':
+          result.tag.replace(serializers.deserialize(value,
+              specifiedType: const FullType(TagState)) as TagState);
+          break;
       }
     }
 
@@ -125,11 +135,14 @@ class _$AppState extends AppState {
   final AuthState authState;
   @override
   final EntryState entry;
+  @override
+  final TagState tag;
 
   factory _$AppState([void updates(AppStateBuilder b)]) =>
       (new AppStateBuilder()..update(updates)).build();
 
-  _$AppState._({this.auth, this.isAuthorizing, this.authState, this.entry})
+  _$AppState._(
+      {this.auth, this.isAuthorizing, this.authState, this.entry, this.tag})
       : super._() {
     if (isAuthorizing == null) {
       throw new BuiltValueNullFieldError('AppState', 'isAuthorizing');
@@ -153,15 +166,18 @@ class _$AppState extends AppState {
         auth == other.auth &&
         isAuthorizing == other.isAuthorizing &&
         authState == other.authState &&
-        entry == other.entry;
+        entry == other.entry &&
+        tag == other.tag;
   }
 
   @override
   int get hashCode {
     return $jf($jc(
-        $jc($jc($jc(0, auth.hashCode), isAuthorizing.hashCode),
-            authState.hashCode),
-        entry.hashCode));
+        $jc(
+            $jc($jc($jc(0, auth.hashCode), isAuthorizing.hashCode),
+                authState.hashCode),
+            entry.hashCode),
+        tag.hashCode));
   }
 
   @override
@@ -170,7 +186,8 @@ class _$AppState extends AppState {
           ..add('auth', auth)
           ..add('isAuthorizing', isAuthorizing)
           ..add('authState', authState)
-          ..add('entry', entry))
+          ..add('entry', entry)
+          ..add('tag', tag))
         .toString();
   }
 }
@@ -195,6 +212,10 @@ class AppStateBuilder implements Builder<AppState, AppStateBuilder> {
   EntryStateBuilder get entry => _$this._entry ??= new EntryStateBuilder();
   set entry(EntryStateBuilder entry) => _$this._entry = entry;
 
+  TagStateBuilder _tag;
+  TagStateBuilder get tag => _$this._tag ??= new TagStateBuilder();
+  set tag(TagStateBuilder tag) => _$this._tag = tag;
+
   AppStateBuilder();
 
   AppStateBuilder get _$this {
@@ -203,6 +224,7 @@ class AppStateBuilder implements Builder<AppState, AppStateBuilder> {
       _isAuthorizing = _$v.isAuthorizing;
       _authState = _$v.authState;
       _entry = _$v.entry?.toBuilder();
+      _tag = _$v.tag?.toBuilder();
       _$v = null;
     }
     return this;
@@ -230,7 +252,8 @@ class AppStateBuilder implements Builder<AppState, AppStateBuilder> {
               auth: _auth?.build(),
               isAuthorizing: isAuthorizing,
               authState: authState,
-              entry: _entry?.build());
+              entry: _entry?.build(),
+              tag: _tag?.build());
     } catch (_) {
       String _$failedField;
       try {
@@ -239,6 +262,8 @@ class AppStateBuilder implements Builder<AppState, AppStateBuilder> {
 
         _$failedField = 'entry';
         _entry?.build();
+        _$failedField = 'tag';
+        _tag?.build();
       } catch (e) {
         throw new BuiltValueNestedFieldError(
             'AppState', _$failedField, e.toString());

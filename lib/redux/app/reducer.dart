@@ -2,13 +2,15 @@ import 'package:koalabag/model/auth.dart';
 import 'package:koalabag/redux/actions.dart' as act;
 import 'package:koalabag/redux/app/state.dart';
 import 'package:koalabag/redux/entry.dart';
+import 'package:koalabag/redux/tag.dart';
 
 AppState appReducer(AppState state, action) {
   return state.rebuild((b) => b
     ..auth.replace(_authReducer(state.auth, action))
     ..isAuthorizing = _isAuthingReducer(state.isAuthorizing, action)
     ..authState = _authStateReducer(state.authState, action)
-    ..entry.replace(entryReducer(state.entry, action)));
+    ..entry.replace(entryReducer(state.entry, action))
+    ..tag.replace(tagReducer(state.tag, action)));
 }
 
 AuthState _authStateReducer(AuthState authState, final action) {

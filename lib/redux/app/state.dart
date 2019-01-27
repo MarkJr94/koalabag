@@ -1,8 +1,10 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
+
 import 'package:koalabag/model/auth.dart';
 import 'package:koalabag/redux/entry.dart';
+import 'package:koalabag/redux/tag.dart';
 
 part 'state.g.dart';
 
@@ -36,6 +38,9 @@ abstract class AppState implements Built<AppState, AppStateBuilder> {
 
   @nullable
   EntryState get entry;
+
+  @nullable
+  TagState get tag;
 
   AppState._();
 

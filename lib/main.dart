@@ -12,6 +12,7 @@ import 'package:koalabag/redux/app/middleware.dart' as mids;
 import 'package:koalabag/redux/app/reducer.dart';
 import 'package:koalabag/redux/app/state.dart';
 import 'package:koalabag/redux/entry.dart';
+import 'package:koalabag/redux/tag.dart';
 
 const dbPath = 'koalabag.db';
 const dbVersion = 1;
@@ -47,13 +48,17 @@ void main() async {
         ..isAuthorizing = false
         ..auth.replace(Auth.empty())
         ..authState = AuthState.fetching
-        ..entry.replace(EntryState.empty())),
+        ..entry.replace(EntryState.empty())
+        ..tag.replace(TagState.empty())),
       middleware: [
         LoggingMiddleware.printer(),
         mids.AuthMiddleware(authDao),
-      ]..addAll(createEntryMiddle(entryDao)));
+      ]
+        ..addAll(createEntryMiddle(entryDao))
+        ..addAll(createTagMiddleware(tagDao)));
 
   store.dispatch(LoadEntries());
+  store.dispatch(LoadTags());
 
   client.store = store;
   runApp(MyApp(
