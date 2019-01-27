@@ -1,5 +1,4 @@
 import 'package:built_collection/built_collection.dart';
-import 'package:koalabag/model/entry_info.dart';
 
 import 'package:koalabag/model/tag.dart';
 import 'package:koalabag/model/tag_to_entry.dart';
@@ -22,7 +21,7 @@ class TagDao implements ITagDao {
   Future<Tag> add(int entryId, final String label) async {
     final tags = await _api.addToEntry(entryId, [label]);
     await _provider.insertMany(tags);
-    //await _provider.addToEntry(entryId, tag.id);
+
     await _tagToEntryProvider.insertMany(tags.map((t) => TagToEntry((b) => b
       ..tagId = t.id
       ..entryId = entryId)));

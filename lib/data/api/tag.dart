@@ -91,7 +91,6 @@ class TagApi implements ITagApi {
 
     // Return value is an entry
     final js = jsonDecode(resp.body)['tags'];
-    print('js = $js');
     assert(js is List);
     final jsonTags = js as List;
 

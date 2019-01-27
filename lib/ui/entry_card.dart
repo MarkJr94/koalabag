@@ -44,41 +44,36 @@ class EntryCard extends StatelessWidget {
   Widget _mainColumn(BuildContext context, EntryInfo entry, TextTheme tt) {
     final tt = Theme.of(context).textTheme;
 
-    var mainColumn = <Widget>[
-      Padding(
-        padding: EdgeInsets.only(bottom: 4.0),
-        child: Text(
-          entry.title,
-          style: tt.headline,
-          softWrap: true,
-        ),
-      ),
-      Padding(
-        padding: EdgeInsets.only(bottom: 4.0),
-        child: Text(
-          entry.domainName,
-          style: tt.caption,
-          softWrap: true,
-        ),
-      ),
-    ];
-
-    if (null != entry.previewPicture) {
-      final image = CachedNetworkImage(
-        imageUrl: entry.previewPicture,
-        placeholder: CircularProgressIndicator(),
-        errorWidget: Icon(Icons.error),
-        height: 128.0,
-        width: double.infinity,
-        fit: BoxFit.fitWidth,
-      );
-
-      mainColumn.add(image);
-    }
-
     return w.enableTap(
         Column(
-          children: mainColumn,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Text(
+                entry.title,
+                style: tt.headline,
+                softWrap: true,
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Text(
+                entry.domainName,
+                style: tt.caption,
+                softWrap: true,
+              ),
+            ),
+            null != entry.previewPicture
+                ? CachedNetworkImage(
+                    imageUrl: entry.previewPicture,
+                    placeholder: CircularProgressIndicator(),
+                    errorWidget: Icon(Icons.error),
+                    height: 128.0,
+                    width: double.infinity,
+                    fit: BoxFit.fitWidth,
+                  )
+                : Container(),
+          ],
         ),
         () => controller.select(entry));
   }

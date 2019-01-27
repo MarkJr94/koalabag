@@ -10,6 +10,7 @@ import 'package:koalabag/data/repository.dart';
 import 'package:koalabag/model.dart';
 import 'package:koalabag/redux/app.dart';
 import 'package:koalabag/redux/entry/actions.dart';
+import 'package:koalabag/ui/tag_dialog.dart';
 import 'package:koalabag/widget_utils.dart' as wu;
 
 class Article extends StatelessWidget {
@@ -24,12 +25,12 @@ class Article extends StatelessWidget {
     return StoreConnector<AppState, _ViewModel>(
       converter: (Store store) => _ViewModel.fromStore(store, id),
       builder: (BuildContext context, _ViewModel vm) {
-        final ei = vm.entryInfo;
         final theme = Theme.of(context);
         final tt = theme.textTheme;
+        final ct = _Controller(context, vm.store);
 
         return Scaffold(
-          appBar: _appBar(vm, ei),
+          appBar: _appBar(vm),
           body: SingleChildScrollView(
               child: AsyncLoader(
                   key: _asyncLoaderState,
@@ -48,97 +49,135 @@ class Article extends StatelessWidget {
                     );
                     return body;
                   })),
-          bottomNavigationBar: _bottomAppBar(context, ei, vm),
+          bottomNavigationBar: _bottomAppBar(context, vm, ct),
         );
       },
     );
   }
+}
 
-  AppBar _appBar(_ViewModel vm, EntryInfo ei) {
-    return AppBar(
-      title: Text(vm.entryInfo.title),
-    );
-  }
+AppBar _appBar(_ViewModel vm) {
+  return AppBar(
+    title: Text(vm.entryInfo.title),
+  );
+}
 
-  BottomAppBar _bottomAppBar(
-      BuildContext context, EntryInfo ei, _ViewModel vm) {
-    return BottomAppBar(
-      color: Theme.of(context).primaryColor,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          IconButton(
-              tooltip: "Archive",
-              icon: Icon(ei.archived() ? Icons.unarchive : Icons.archive),
-              onPressed: vm.archive),
-          IconButton(
-              tooltip: "Star",
-              icon: Icon(ei.starred() ? Icons.star : Icons.star_border),
-              onPressed: vm.star),
-          IconButton(tooltip: "Tags", icon: Icon(Icons.label), onPressed: null),
-          IconButton(
-              tooltip: "Decrease Text Size",
-              icon: Icon(Icons.remove),
-              onPressed: vm.shrinkText),
-          IconButton(
-              tooltip: "Increase Text Size",
-              icon: Icon(Icons.add),
-              onPressed: vm.growText),
-        ],
-      ),
-    );
-  }
+Column _mainColumn(Entry entry, TextTheme tt, _ViewModel vm) {
+  const insets = EdgeInsets.symmetric(vertical: 4.0);
 
-  Column _mainColumn(Entry entry, TextTheme tt, _ViewModel vm) {
-    final title = Text(
-      entry.title,
-      style: tt.title,
-      textAlign: TextAlign.start,
-    );
+  final title = Text(
+    entry.title,
+    style: tt.title,
+    textAlign: TextAlign.start,
+  );
 
-    final domainName = InkWell(
-        child: Text(
-          entry.domainName,
-          style: TextStyle(
-            color: Colors.lightBlue,
-            decoration: TextDecoration.underline,
-          ),
-          textAlign: TextAlign.start,
+  final domainName = InkWell(
+      child: Text(
+        entry.domainName,
+        style: TextStyle(
+          color: Colors.lightBlue,
+          decoration: TextDecoration.underline,
         ),
-        onTap: () async => await launch(entry.url));
+        textAlign: TextAlign.start,
+      ),
+      onTap: () async => await launch(entry.url));
 
-    final readTime = Text('Reading time: ${entry.readingTime}min');
+  final readTime = Text('Reading time: ${entry.readingTime}min');
 
-    final image = entry.previewPicture == null
-        ? Container()
-        : CachedNetworkImage(
-            imageUrl: entry.previewPicture,
-            placeholder: CircularProgressIndicator(),
-            errorWidget: Icon(Icons.error),
-            height: 128.0,
-            width: double.infinity,
-            fit: BoxFit.fitWidth,
-          );
+  final image = entry.previewPicture == null
+      ? Container()
+      : CachedNetworkImage(
+          imageUrl: entry.previewPicture,
+          placeholder: CircularProgressIndicator(),
+          errorWidget: Icon(Icons.error),
+          height: 128.0,
+          width: double.infinity,
+          fit: BoxFit.fitWidth,
+        );
 
-    final insets = EdgeInsets.symmetric(vertical: 4.0);
+  final kids = <Widget>[
+    title,
+    domainName,
+    image,
+    readTime,
+    Divider(),
+    Html(
+      data: entry.content ?? "",
+      defaultTextStyle: tt.body1.apply(fontSizeFactor: vm.scaleFactor),
+      onLinkTap: (link) async => await launch(link),
+    )
+  ].map((w) => wu.pad(w, insets));
 
-    final kids = <Widget>[
-      title,
-      domainName,
-      image,
-      readTime,
-      Divider(),
-      Html(
-        data: entry.content,
-        defaultTextStyle: tt.body1.apply(fontSizeFactor: vm.scaleFactor),
-        onLinkTap: (link) async => await launch(link),
-      )
-    ].map((w) => wu.pad(w, insets));
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: List.of(kids),
+  );
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.of(kids),
-    );
+BottomAppBar _bottomAppBar(
+    BuildContext context, _ViewModel vm, _Controller ct) {
+  final EntryInfo ei = vm.entryInfo;
+  return BottomAppBar(
+    color: Theme.of(ct.context).primaryColor,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        IconButton(
+            tooltip: "Archive",
+            icon: Icon(ei.archived() ? Icons.unarchive : Icons.archive),
+            onPressed: () => ct.archive(ei)),
+        IconButton(
+            tooltip: "Star",
+            icon: Icon(ei.starred() ? Icons.star : Icons.star_border),
+            onPressed: () => ct.star(ei)),
+        IconButton(
+            tooltip: "Tags",
+            icon: Icon(Icons.label),
+            onPressed: () => ct.manageTags(ei)),
+        IconButton(
+            tooltip: "Decrease Text Size",
+            icon: Icon(Icons.remove),
+            onPressed: ct.shrinkText),
+        IconButton(
+            tooltip: "Increase Text Size",
+            icon: Icon(Icons.add),
+            onPressed: ct.growText),
+      ],
+    ),
+  );
+}
+
+class _Controller {
+  final BuildContext context;
+  final Store<AppState> store;
+
+  _Controller(this.context, this.store);
+
+  void star(EntryInfo entryInfo) {
+    store.dispatch(ChangeEntry(
+        archived: entryInfo.archived(),
+        starred: !entryInfo.starred(),
+        entry: entryInfo));
+  }
+
+  void archive(EntryInfo entryInfo) {
+    store.dispatch(ChangeEntry(
+        archived: !entryInfo.archived(),
+        starred: entryInfo.starred(),
+        entry: entryInfo));
+  }
+
+  void growText() {
+    store.dispatch(GrowText());
+  }
+
+  void shrinkText() {
+    store.dispatch(ShrinkText());
+  }
+
+  void manageTags(EntryInfo entryInfo) {
+    Navigator.of(context).push(MaterialPageRoute(
+        fullscreenDialog: true, builder: (context) => TagDialog(entryInfo)));
   }
 }
 
@@ -160,36 +199,15 @@ class _ViewModel {
     );
   }
 
-  void star() {
-    store.dispatch(ChangeEntry(
-        archived: entryInfo.archived(),
-        starred: !entryInfo.starred(),
-        entry: entryInfo));
-  }
-
-  void archive() {
-    store.dispatch(ChangeEntry(
-        archived: !entryInfo.archived(),
-        starred: entryInfo.starred(),
-        entry: entryInfo));
-  }
-
-  void growText() {
-    store.dispatch(GrowText());
-  }
-
-  void shrinkText() {
-    store.dispatch(ShrinkText());
-  }
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is _ViewModel &&
           runtimeType == other.runtimeType &&
           entryInfo == other.entryInfo &&
+          scaleFactor == other.scaleFactor &&
           id == other.id;
 
   @override
-  int get hashCode => entryInfo.hashCode ^ id.hashCode;
+  int get hashCode => entryInfo.hashCode ^ id.hashCode ^ scaleFactor.hashCode;
 }

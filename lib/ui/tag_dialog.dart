@@ -17,13 +17,14 @@ class TagDialog extends StatefulWidget {
 }
 
 class _State extends State<TagDialog> {
-  final EntryInfo ei;
   final GlobalKey<AutoCompleteTextFieldState<_TagSuggestion>> tfKey =
       GlobalKey<AutoCompleteTextFieldState<_TagSuggestion>>();
 
+  final EntryInfo ei;
   List<Tag> tags = List();
   BuiltList<_TagSuggestion> suggestions = BuiltList.of([]);
   bool _saving = false;
+  String _label = "";
 
   _State(this.ei);
 
@@ -48,84 +49,43 @@ class _State extends State<TagDialog> {
 
   @override
   Widget build(BuildContext context) {
+    const hInsets = EdgeInsets.symmetric(horizontal: 16.0);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Tags'),
         actions: [
-          FlatButton(
-              onPressed: () {
-                Navigator.of(context).pop(null);
-              },
-              child: Text('CANCEL', style: TextStyle(color: Colors.white)))
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).pop(null);
+            },
+            icon: Icon(Icons.check),
+            tooltip: 'Done',
+          )
         ],
       ),
-      body: Container(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(ei.title,
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 22.0)),
-              _textField(),
-              _tagList(),
-            ]),
-      ),
+      body: Column(children: <Widget>[
+        _saving ? LinearProgressIndicator(value: null) : Container(),
+        Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(ei.title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22.0))),
+        Padding(
+            padding: hInsets,
+            child: _textField(
+              textChanged: (t) => _label = t,
+              itemSubmitted: (suggestion) => _label = suggestion.tag.label,
+              key: tfKey,
+              onAddPressed: () async => _addTag(ei.id, _label),
+            )),
+        Expanded(
+          child: Padding(
+              padding: hInsets,
+              child: _tagList(
+                  tags: this.tags,
+                  delete: (tag) async => _removeTag(ei.id, tag))),
+        ),
+      ]),
     );
-  }
-
-  Widget _modal(Widget w) {
-    return Stack(children: <Widget>[
-      (_saving
-          ? Opacity(
-              opacity: 0.3,
-              child: ModalBarrier(dismissible: false, color: Colors.grey))
-          : Container()),
-      (_saving ? Center(child: CircularProgressIndicator()) : Container()),
-      w,
-    ]);
-  }
-
-  Widget _textField() {
-    final actf = AutoCompleteTextField<_TagSuggestion>(
-      itemSubmitted: (item) {
-        return item.tag.label;
-      },
-      key: tfKey,
-      clearOnSubmit: false,
-      suggestions: [],
-      itemBuilder: (context, suggested) =>
-          ListTile(title: Text(suggested.tag.label)),
-      itemSorter: (s1, s2) => s1.tag.label.compareTo(s2.tag.label),
-      itemFilter: (suggestion, query) =>
-          suggestion.tag.label.toLowerCase().startsWith(query.toLowerCase()),
-    );
-
-    return Row(children: <Widget>[
-      Expanded(child: actf),
-      IconButton(
-          icon: Icon(Icons.add),
-          onPressed: () async => _addTag(ei.id, tfKey.currentState.currentText),
-          tooltip: 'Add Tag'),
-    ]);
-  }
-
-  Widget _tagList() {
-    return Expanded(
-        child: ListView.builder(
-            itemCount: tags.length,
-            itemBuilder: (context, idx) {
-              final tag = tags[idx];
-              print('tag = $tag');
-              return ListTile(
-                leading: Icon(Icons.label),
-                title: Text(tag.label),
-                trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () async => _removeTag(ei.id, tag),
-                    tooltip: 'Remove Tag'),
-              );
-            }));
   }
 
   Future<void> _addTag(int entryId, String label) async {
@@ -134,6 +94,7 @@ class _State extends State<TagDialog> {
     setState(() {
       _saving = true;
     });
+
     final ITagDao tagDao = Global().dao.tagDao;
 
     try {
@@ -158,6 +119,7 @@ class _State extends State<TagDialog> {
     setState(() {
       _saving = true;
     });
+
     final tagDao = Global().dao.tagDao;
 
     try {
@@ -182,4 +144,45 @@ class _TagSuggestion {
 
   @override
   String toString() => this.tag.label;
+}
+
+Widget _textField(
+    {@required void Function() onAddPressed,
+    @required Function(_TagSuggestion) itemSubmitted,
+    @required Function(String) textChanged,
+    @required GlobalKey<AutoCompleteTextFieldState<_TagSuggestion>> key}) {
+  return Row(children: <Widget>[
+    Expanded(
+        child: AutoCompleteTextField<_TagSuggestion>(
+            itemSubmitted: itemSubmitted,
+            key: key,
+            clearOnSubmit: false,
+            suggestions: [],
+            itemBuilder: (context, suggested) =>
+                ListTile(title: Text(suggested.tag.label)),
+            itemSorter: (s1, s2) => s1.tag.label.compareTo(s2.tag.label),
+            itemFilter: (suggestion, query) => suggestion.tag.label
+                .toLowerCase()
+                .startsWith(query.toLowerCase()),
+            textChanged: textChanged)),
+    IconButton(
+        icon: Icon(Icons.add), onPressed: onAddPressed, tooltip: 'Add Tag'),
+  ]);
+}
+
+Widget _tagList(
+    {@required final List<Tag> tags, @required void Function(Tag) delete}) {
+  return ListView.builder(
+      itemCount: tags.length,
+      itemBuilder: (context, idx) {
+        final tag = tags[idx];
+        return ListTile(
+          leading: Icon(Icons.label),
+          title: Text(tag.label),
+          trailing: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () => delete(tag),
+              tooltip: 'Remove Tag'),
+        );
+      });
 }
